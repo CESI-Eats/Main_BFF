@@ -27,7 +27,7 @@ export const getMyAccount = async (req: Request, res: Response) => {
         }
 };
 
-export const getAllMyCommands = async (req: Request, res: Response) => {
+export const getMyCatalog = async (req: Request, res: Response) => {
     try {
 
     } catch (err) {
@@ -35,7 +35,7 @@ export const getAllMyCommands = async (req: Request, res: Response) => {
     }
 };
 
-export const getMyCommands = async (req: Request, res: Response) => {
+export const getMenus = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
         //
@@ -43,7 +43,7 @@ export const getMyCommands = async (req: Request, res: Response) => {
         //
     }
 };
-export const getMyCatalog = async (req: Request, res: Response) => {
+export const getArticles = async (req: Request, res: Response) => {
     try {
         //
     } catch (err) {
@@ -52,7 +52,7 @@ export const getMyCatalog = async (req: Request, res: Response) => {
 };
 
 
-export const getMenus = async (req: Request, res: Response) => {
+export const getAllMyOrders = async (req: Request, res: Response) => {
     try {
         const catalogId = req.params.catalogId;
         const id = req.params.id;
@@ -62,7 +62,47 @@ export const getMenus = async (req: Request, res: Response) => {
     }
 };
 
-export const getArticles = async (req: Request, res: Response) => {
+export const getMyOrders = async (req: Request, res: Response) => {
+    try {
+        //
+    } catch (err) {
+        //
+    }
+};
+
+export const createAccount = async (req: Request, res: Response) => {
+    try {
+        //
+    } catch (err) {
+        //
+    }
+};
+
+export const createMenu = async (req: Request, res: Response) => {
+    try {
+        //
+    } catch (err) {
+        //
+    }
+};
+
+export const createArticles = async (req: Request, res: Response) => {
+    try {
+        //
+    } catch (err) {
+        //
+    }
+};
+
+export const collectKitty = async (req: Request, res: Response) => {
+    try {
+        //
+    } catch (err) {
+        //
+    }
+};
+
+export const updateMyAccount = async (req: Request, res: Response) => {
     try {
         //
     } catch (err) {
@@ -78,7 +118,7 @@ export const updateMyCatalog = async (req: Request, res: Response) => {
     }
 };
 
-export const updateMenus = async (req: Request, res: Response) => {
+export const updateMenu = async (req: Request, res: Response) => {
     try {
         //
     } catch (err) {
@@ -87,6 +127,30 @@ export const updateMenus = async (req: Request, res: Response) => {
 };
 
 export const updateArticles = async (req: Request, res: Response) => {
+    try {
+        //
+    } catch (err) {
+        //
+    }
+};
+
+export const deleteMyAccount = async (req: Request, res: Response) => {
+    try {
+        //
+    } catch (err) {
+        //
+    }
+};
+
+export const deleteAllMyOrders = async (req: Request, res: Response) => {
+    try {
+        //
+    } catch (err) {
+        //
+    }
+};
+
+export const deleteMyOrders = async (req: Request, res: Response) => {
     try {
         //
     } catch (err) {
