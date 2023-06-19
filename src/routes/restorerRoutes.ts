@@ -6,7 +6,7 @@ import { IdentityType } from "../enums/identityType";
 const router = express.Router();
 
 // Get
-router.get('/myaccount', restorerController.getMyAccount);
+router.get('/myaccount', authorize([IdentityType.RESTORER]),restorerController.getMyAccount);
 router.get('/mycatalogs', restorerController.getMyCatalog);
 router.get('/menus/:id', restorerController.getMenus);
 router.get('/articles/:id', restorerController.getArticles);
@@ -17,7 +17,7 @@ router.get('/orders/:id', restorerController.getMyOrders);
 router.post('/accounts', restorerController.createAccount);
 router.post('/menus', restorerController.createMenu);
 router.post('/articles', restorerController.createArticles);
-router.post('/collectkitty', restorerController.collectKitty);
+router.post('/collectkitty', authorize([IdentityType.RESTORER]), restorerController.collectKitty);
 
 // Put
 router.put('/myaccount', restorerController.updateMyAccount);

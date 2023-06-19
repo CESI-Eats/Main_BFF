@@ -1,4 +1,4 @@
-import { MessageLapinou, receiveManyMessages, sendMessage, connectLapinou } from './services/lapinouService';
+import { MessageLapinou, sendMessage, connectLapinou } from './services/lapinouService';
 
 export function initLapinou(){
     connectLapinou().catch((err) => {
