@@ -6,6 +6,7 @@ export interface MessageLapinou {
     content: any;
     replyTo?: string;
     correlationId?: string;
+    sender?: string;
 }
 
 
