@@ -1,5 +1,7 @@
 import * as restorerController from "../controllers/restorerController";
 import express from "express";
+import { authorize } from "../middlewares/authorizationMiddleware";
+import { IdentityType } from "../enums/identityType";
 
 const router = express.Router();
 

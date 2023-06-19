@@ -1,43 +1,30 @@
 import { Request, Response } from 'express';
 import {IdentityType} from "../enums/identityType";
+import { MessageLapinou, publishTopic, receiveResponses } from '../services/lapinouService';
+import { v4 as uuidv4 } from 'uuid';
 
 
 export const getMyAccount = async (req: Request, res: Response) => {
     try {
+            const replyQueue = 'get.restorer.account.reply';
+            const correlationId = uuidv4();
+            const message: MessageLapinou = {
+                success: true,
+                content: (req as any).identityId,
+                correlationId: correlationId,
+                replyTo: replyQueue
+            };
+            await publishTopic('account', 'get.restorer.account', message);
 
-        switch ((req as any).identityType) {
-            case IdentityType.USER:
-                // Get /account/user with token to filter
-                const account= {
-                    firstName: 'Killian',
-                    name: 'LEGENDRE',
-                    birthday: 22/10/2001,
-                    phoneNumber: "+33 7 82 04 10 21",
-                    address: {
-                        street: '242 rue des Clatz',
-                        postalCode: 45160,
-                        city: 'Olivet',
-                        country: 'France',
-                    }
-                }
-                res.status(200).json(account);
-                break;
-            case IdentityType.RESTORER:
-                // Get /account/restorer with token to filter
-                res.status(400);
-                break;
-            case IdentityType.DELIVERYMAN:
-                // Get /account/deliveryman to filter
-                res.status(400);
-                break;
-            default:
-                res.status(400);
-                break;
+            const responses = await receiveResponses(replyQueue, correlationId, 1);
+            if (responses[0].success === false) {
+                return res.status(404).json({message: 'Cannot find restorer account'});
+            }
+            res.status(200).json(responses[0].content);
+        } catch (err) {
+            const errMessage = err instanceof Error ? err.message : 'An error occurred';
+            res.status(500).json({message: errMessage});
         }
-        res.status(400);
-    } catch (err) {
-        //
-    }
 };
 
 export const getMyCatalog = async (req: Request, res: Response) => {

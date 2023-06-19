@@ -65,7 +65,7 @@ export async function sendMessage(message: MessageLapinou, queueName: string): P
 
     // Send message to the queue
     ch.sendToQueue(queueName, buffer);
-    console.log(`Message sent: ${JSON.stringify(message)}`);
+    console.log(` [x] Message sent: ${JSON.stringify(message)}`);
 }
 
 export function receiveManyMessages(queueName: string, callback: (message: MessageLapinou) => void): void {
@@ -96,7 +96,7 @@ export function receiveResponses(queueName: string, expectedCorrelationId: strin
         ch.consume(queueName, (msg) => {
             if (msg !== null) {
                 const message: MessageLapinou = JSON.parse(msg.content.toString());
-
+                console.log(` [x] Received response: ${JSON.stringify(message)}`);
                 // Get consumer tag
                 const consumerTag = msg.fields.consumerTag;
 
@@ -125,7 +125,7 @@ export function receiveResponses(queueName: string, expectedCorrelationId: strin
 }
 
 
-export async function publishTopic(exchange: string, routingKey: string, message: any, replyQueue: string, correlationId: string): Promise<void> {
+export async function publishTopic(exchange: string, routingKey: string, message: any): Promise<void> {
     if (!connected) {
         throw new Error('Not connected to rabbitMQ');
     }
@@ -137,7 +137,7 @@ export async function publishTopic(exchange: string, routingKey: string, message
     const buffer = Buffer.from(JSON.stringify(message));
 
     // Publish message to the exchange with the specified routing key and replyTo property
-    ch.publish(exchange, routingKey, buffer, { replyTo: replyQueue, correlationId: correlationId });
+    ch.publish(exchange, routingKey, buffer);
     console.log(` [x] Sent ${routingKey}:'${JSON.stringify(message)}'`);
 }
 

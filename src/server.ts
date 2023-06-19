@@ -1,9 +1,10 @@
 ﻿import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import userRoutes from './routes/userRoutes'
 import restorerRoutes from './routes/restorerRoutes'
 import deliverymanRoutes from './routes/deliverymanRoutes'
-dotenv.config();
+import { initLapinou } from './lapinou';
 const app = express();
 
 // Set JSON format for HTTP requests
@@ -18,6 +19,8 @@ app.use('/user', userRoutes)
 app.use('/restorer', restorerRoutes)
 app.use('/deliveryman', deliverymanRoutes)
 app.use('/doc', swaggerUi.serve, swaggerUi.setup(swaggerFile))
+
+initLapinou();
 
 // Start server
 const PORT = process.env.PORT || 3000;
