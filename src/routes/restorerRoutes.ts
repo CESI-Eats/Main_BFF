@@ -1,9 +1,11 @@
 import * as restorerController from "../controllers/restorerController";
 import express from "express";
+import { authorize } from "../middlewares/authorizationMiddleware";
+import { IdentityType } from "../enums/identityType";
 
 const router = express.Router();
 
-router.get('/myaccount', restorerController.getMyAccount);
+router.get('/myaccount', authorize([IdentityType.RESTORER]), restorerController.getMyAccount);
 router.get('/mycommands', restorerController.getAllMyCommands);
 router.get('/commands/:id', restorerController.getMyCommands);
 router.get('/mycatalog', restorerController.getMyCatalog);
