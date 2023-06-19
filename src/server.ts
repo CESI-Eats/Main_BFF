@@ -1,7 +1,8 @@
 ﻿import dotenv from 'dotenv';
 import express from 'express';
-import myModelRoutes from './routes/Routes';
-
+import userRoutes from './routes/userRoutes'
+import restorerRoutes from './routes/restorerRoutes'
+import deliverymanRoutes from './routes/deliverymanRoutes'
 dotenv.config();
 const app = express();
 
@@ -13,6 +14,9 @@ const swaggerFile = require('../swagger_output.json')
 
 // Create endpoint
 app.get('/', (req, res) => {res.status(200).json({ response: true });});
+app.use('/user', userRoutes)
+app.use('/restorer', restorerRoutes)
+app.use('/deliveryman', deliverymanRoutes)
 app.use('/doc', swaggerUi.serve, swaggerUi.setup(swaggerFile))
 
 // Start server

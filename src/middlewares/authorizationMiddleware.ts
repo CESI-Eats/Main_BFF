@@ -8,7 +8,8 @@ export const authorize = (allowedIdentityTypes: IdentityType[]) => {
         const {identityId, identityType} = decodeJwt(String(req.headers.authorization?.split(' ')[1]));
 
         (req as any).identityId = identityId;
-  
+        (req as any).identityType = identityType;
+
         if (!allowedIdentityTypes.includes(identityType)) {
           res.status(403).json({ message: 'Forbidden' });
         } else {
