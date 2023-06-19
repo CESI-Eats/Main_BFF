@@ -8,7 +8,7 @@ export const getMyAccount = async (req: Request, res: Response) => {
         const account = {
             firstName: 'Killian',
             name: 'LEGENDRE',
-            birthday: '22/10/2001',
+            birthday: '2001-10-22',
             phoneNumber: "+33 7 82 04 10 21",
             address: {
                 street: '242 rue des Clatz',
@@ -19,26 +19,16 @@ export const getMyAccount = async (req: Request, res: Response) => {
         }
         res.status(200).json(account);
     } catch (err) {
-        //
-        res.status(400);
+        res.status(500).json({message: err});
     }
 };
 
 export const getMyCart = async (req: Request, res: Response) => {
     try {
         // Get /cart with token to filter
-        const cart = [
-            {
-                id: 1,
-                name: "Menu 1",
-                description: "Description du menu 1",
-                image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
-                articles: [
-                    {id: 1, name: "Article 1"},
-                    {id: 2, name: "Article 2"},
-                    {id: 3, name: "Article 3"},
-                ],
-            },
+        const cart = {
+            id: "1235",
+            menus: [
             {
                 id: 1,
                 name: "Menu 1",
@@ -60,11 +50,22 @@ export const getMyCart = async (req: Request, res: Response) => {
                     {id: 2, name: "Article 2"},
                     {id: 3, name: "Article 3"},
                 ],
+            },
+            {
+                id: 3,
+                name: "Menu 3",
+                description: "Description du menu 3",
+                image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
+                articles: [
+                    {id: 1, name: "Article 1"},
+                    {id: 2, name: "Article 2"},
+                    {id: 3, name: "Article 3"},
+                ],
             }
-        ]
+        ]}
         res.status(200).json(cart);
     } catch (err) {
-        //
+        res.status(500).json({message: err});
     }
 };
 
@@ -98,7 +99,7 @@ export const getAllCatalogs = async (req: Request, res: Response) => {
         ]
         res.status(200).json(catalogs);
     } catch (err) {
-        //
+        res.status(500).json({message: err});
     }
 };
 
@@ -108,64 +109,63 @@ export const getCatalogs = async (req: Request, res: Response) => {
         // Get /catalogs/:id with token
         const catalog = {
             id: 1,
-            name: "catalog 1",
-            description: "Description du catalog 1",
+            name: "Burger Restaurant",
+            description: "A restaurant specializing in delicious burgers.",
             image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
-
             menus: [
                 {
                     id: 1,
-                    name: "Menu 1",
-                    description: "Description du menu 1",
-                    price: 20,
+                    name: "Classic Burger Menu",
+                    description: "Enjoy our classic burger with all the fixings.",
+                    price: 10,
                     image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
                     articles: [
-                        {id: 1, name: "Article 1"},
-                        {id: 2, name: "Article 2"},
-                        {id: 3, name: "Article 3"},
-                    ],
+                        {id: 1, name: "Classic Burger"},
+                        {id: 2, name: "French Fries"},
+                        {id: 3, name: "Soft Drink"}
+                    ]
                 },
                 {
                     id: 2,
-                    name: "Menu 2",
-                    description: "Description du menu 2",
-                    price: 20,
+                    name: "Cheeseburger Menu",
+                    description: "Indulge in our cheeseburger with melted cheese and special sauce.",
+                    price: 12,
                     image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
                     articles: [
-                        {id: 1, name: "Article 1"},
-                        {id: 2, name: "Article 2"},
-                        {id: 3, name: "Article 3"},
-                    ],
+                        {id: 1, name: "Cheeseburger"},
+                        {id: 2, name: "Onion Rings"},
+                        {id: 3, name: "Milkshake"}
+                    ]
                 },
                 {
                     id: 3,
-                    name: "Menu 3",
-                    description: "Description du menu 3",
-                    price: 20,
+                    name: "Vegetarian Burger Menu",
+                    description: "A plant-based burger for our vegetarian customers.",
+                    price: 10,
                     image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
                     articles: [
-                        {id: 1, name: "Article 1"},
-                        {id: 2, name: "Article 2"},
-                        {id: 3, name: "Article 3"},
-                    ],
+                        {id: 1, name: "Vegetarian Burger"},
+                        {id: 2, name: "Sweet Potato Fries"},
+                        {id: 3, name: "Iced Tea"}
+                    ]
                 },
                 {
                     id: 4,
-                    name: "Menu 4",
-                    description: "Description du restaurant 4",
-                    price: 20,
+                    name: "Chicken Burger Menu",
+                    description: "Try our juicy chicken burger with tangy mayo.",
+                    price: 11,
                     image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
                     articles: [
-                        {id: 1, name: "Article 1"},
-                        {id: 2, name: "Article 2"},
-                        {id: 3, name: "Article 3"},
-                    ],
-                },
+                        {id: 1, name: "Chicken Burger"},
+                        {id: 2, name: "Coleslaw"},
+                        {id: 3, name: "Lemonade"}
+                    ]
+                }
             ]
         }
         res.status(200).json(catalog);
     } catch (err) {
-        //
+        res.status(500).json({message: err});
     }
 };
 
@@ -177,69 +177,76 @@ export const getMenus = async (req: Request, res: Response) => {
         // Mixer to the menu wanted
         const menu = {
             id: 1,
-            name: "Menu 1",
-            description: "Description du menu 1",
-            price: 20,
+            name: "Classic Burger Menu",
+            description: "Enjoy our classic burger with all the fixings.",
+            price: 10,
             image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
             articles: [
                 {
                     id: 1,
-                    name: "Article 1",
-                    description: "Description de l'article 1",
+                    name: "Classic Burger",
+                    description: "Our classic burger features a juicy beef patty, fresh lettuce, ripe tomatoes, sliced onions, and pickles, served on a toasted bun.",
                     price: 10,
-                    image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
+                    image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg"
                 },
                 {
                     id: 2,
-                    name: "Article 2",
-                    description: "Description de l'article 2",
-                    price: 10,
-                    image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
+                    name: "French Fries",
+                    description: "Golden and crispy French fries seasoned to perfection.",
+                    price: 3,
+                    image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg"
                 },
+                {
+                    id: 3,
+                    name: "Soft Drink",
+                    description: "Choose from a variety of refreshing soft drinks to accompany your meal.",
+                    price: 2,
+                    image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg"
+                }
             ]
         }
         res.status(200).json(menu);
     } catch (err) {
-        //
+        res.status(500).json({message: err});
     }
 };
 
 export const createAccount = async (req: Request, res: Response) => {
     try {
-        // Create an account using the token and body infos
+        res.status(200).json({message: "Account created"});
     } catch (err) {
-        //
+        res.status(500).json({message: err});
     }
 };
 
 export const createOrder = async (req: Request, res: Response) => {
     try {
-        // Create an order using the token and body infos
+        res.status(200).json({message: "Order created"});
     } catch (err) {
-        //
+        res.status(500).json({message: err});
     }
 };
 
 export const updateMyAccount = async (req: Request, res: Response) => {
     try {
-        // Update an account using the token
+        res.status(200).json({message: "Account updated"});
     } catch (err) {
-        //
+        res.status(500).json({message: err});
     }
 };
 
 export const updateMyCart = async (req: Request, res: Response) => {
     try {
-        // Update a cart using the token
+        res.status(200).json({message: "Cart updated"});
     } catch (err) {
-        //
+        res.status(500).json({message: err});
     }
 };
 
 export const deleteAccount = async (req: Request, res: Response) => {
     try {
-        // delete an account using the token
+        res.status(200).json({message: "Account deleted"});
     } catch (err) {
-        //
+        res.status(500).json({message: err});
     }
 };
