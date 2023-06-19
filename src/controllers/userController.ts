@@ -1,6 +1,7 @@
 import {Request, Response} from 'express';
 import {IdentityType} from "../enums/identityType";
 
+
 export const getMyAccount = async (req: Request, res: Response) => {
     try {
         // Get /account/user with token to filter
@@ -203,9 +204,25 @@ export const getMenus = async (req: Request, res: Response) => {
     }
 };
 
+export const createAccount = async (req: Request, res: Response) => {
+    try {
+        // Create an account using the token and body infos
+    } catch (err) {
+        //
+    }
+};
+
+export const createOrder = async (req: Request, res: Response) => {
+    try {
+        // Create an order using the token and body infos
+    } catch (err) {
+        //
+    }
+};
+
 export const updateMyAccount = async (req: Request, res: Response) => {
     try {
-        // Update /myaccount with token
+        // Update an account using the token
     } catch (err) {
         //
     }
@@ -213,7 +230,15 @@ export const updateMyAccount = async (req: Request, res: Response) => {
 
 export const updateMyCart = async (req: Request, res: Response) => {
     try {
-        // Update /mycart with token
+        // Update a cart using the token
+    } catch (err) {
+        //
+    }
+};
+
+export const deleteAccount = async (req: Request, res: Response) => {
+    try {
+        // delete an account using the token
     } catch (err) {
         //
     }
