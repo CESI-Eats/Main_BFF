@@ -1,5 +1,7 @@
 import express from 'express';
 import * as userController from '../controllers/userController';
+import {authorize} from "../middlewares/authorizationMiddleware";
+import {IdentityType} from "../enums/identityType";
 
 
 const router = express.Router();
@@ -10,10 +12,12 @@ router.get('/mycart', userController.getMyCart);
 router.get('/catalogs', userController.getAllCatalogs);
 router.get('/catalogs/:id', userController.getCatalogs);
 router.get('/catalogs/:catalogId/menus/:id', userController.getMenus);
+router.get('/orders', userController.getOrders)
+router.get('/orders/:id', userController.getOrder)
 
 // Post
 router.post('/accounts', userController.createAccount);
-router.post('/orders', userController.createOrder);
+router.post('/orders',authorize([IdentityType.USER]), userController.createOrder);
 
 // Put
 router.put('/myaccount', userController.updateMyAccount);

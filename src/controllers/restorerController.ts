@@ -110,9 +110,9 @@ export const collectKitty = async (req: Request, res: Response) => {
         };
         await publishTopic('restorers', 'collect.restorer.kitty', message);
 
-        const responses = await receiveResponses(replyQueue, correlationId, 2);
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
         const failedResponseContents = responses
-            .filter((response) => response.success === false)
+            .filter((response) => !response.success)
             .map((response) => response.content);
         if (failedResponseContents.length > 0) {
             return res.status(500).json({errors: failedResponseContents});
