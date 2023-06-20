@@ -75,6 +75,10 @@ export function receiveResponses(queueName: string, expectedCorrelationId: strin
 
         const receivedResponses: MessageLapinou[] = [];
 
+        const timeoutId = setTimeout(() => {
+            reject(new Error('Timeout after 5 seconds'));
+        }, 5000);
+
         // Wait for Queue Messages
         ch.consume(queueName, (msg) => {
             if (msg !== null) {
@@ -94,6 +98,7 @@ export function receiveResponses(queueName: string, expectedCorrelationId: strin
                                 console.error(`Failed to cancel consumer: ${err}`);
                                 reject(err);
                             } else {
+                                clearTimeout(timeoutId);
                                 resolve(receivedResponses);
                             }
                         });
