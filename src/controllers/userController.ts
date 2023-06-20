@@ -1,5 +1,7 @@
 import {Request, Response} from 'express';
 import {IdentityType} from "../enums/identityType";
+import {v4 as uuidv4} from "uuid";
+import {MessageLapinou, publishTopic, receiveResponses} from "../services/lapinouService";
 
 
 export const getMyAccount = async (req: Request, res: Response) => {
@@ -211,6 +213,62 @@ export const getMenus = async (req: Request, res: Response) => {
     }
 };
 
+export const getOrders = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'get.payments.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {id: (req as any).identityId},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('all', 'get.payments', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        const failedResponseContents = responses
+            .filter((response) => !response.success)
+            .map((response) => response.content);
+        if (failedResponseContents.length > 0) {
+            return res.status(500).json({errors: failedResponseContents});
+        }
+
+        res.status(200).json({message: responses});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+
+export const getOrder = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'get.payment.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {id: (req as any).params.id},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('all', 'get.payment', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        const failedResponseContents = responses
+            .filter((response) => !response.success)
+            .map((response) => response.content);
+        if (failedResponseContents.length > 0) {
+            return res.status(500).json({errors: failedResponseContents});
+        }
+
+        res.status(200).json({message: responses});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+
 export const createAccount = async (req: Request, res: Response) => {
     try {
         res.status(200).json({message: "Account created"});
@@ -220,10 +278,33 @@ export const createAccount = async (req: Request, res: Response) => {
 };
 
 export const createOrder = async (req: Request, res: Response) => {
+    if (!req.body.amount || !req.body.mode) {
+        return res.status(400).json({message: 'Missing parameters amount or mode'});
+    }
     try {
-        res.status(200).json({message: "Order created"});
-    } catch (err) {
-        res.status(500).json({message: err});
+        const replyQueue = 'create.payment.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {id: (req as any).identityId, amount: req.body.amount, mode: req.body.mode},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('users', 'create.payment', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        const failedResponseContents = responses
+            .filter((response) => !response.success)
+            .map((response) => response.content);
+        if (failedResponseContents.length > 0) {
+            return res.status(500).json({errors: failedResponseContents});
+        }
+
+        res.status(200).json({message: 'Payment created'});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 

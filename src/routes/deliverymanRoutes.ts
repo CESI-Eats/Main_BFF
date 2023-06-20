@@ -1,5 +1,7 @@
 import * as deliverymanController from "../controllers/deliverymanController";
 import express from "express";
+import {authorize} from "../middlewares/authorizationMiddleware";
+import {IdentityType} from "../enums/identityType";
 
 const router = express.Router();
 
@@ -10,11 +12,11 @@ router.get('/orders/:id', deliverymanController.getMyOrders);
 
 // Post
 router.post('/accounts', deliverymanController.createAccount);
-router.post('/collectkitty', deliverymanController.collectKitty);
+router.post('/collectkitty', authorize([IdentityType.DELIVERYMAN]), deliverymanController.collectKitty);
 
 // Put
 router.put('/orders/:id', deliverymanController.updateOrder);
-router.post('/myaccount', deliverymanController.updateMyAccount);
+router.put('/myaccount', deliverymanController.updateMyAccount);
 
 // Delete
 router.delete('/myaccount', deliverymanController.deleteMyAccount);
