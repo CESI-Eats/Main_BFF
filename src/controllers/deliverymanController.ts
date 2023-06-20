@@ -5,9 +5,123 @@ import {MessageLapinou, publishTopic, receiveResponses} from "../services/lapino
 
 export const getMyAccount = async (req: Request, res: Response) => {
     try {
-        //
-    } catch (err) {
-        //
+        const replyQueue = 'get.deliveryman.account.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {id: (req as any).identityId},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('deliverymans', 'get.deliveryman.account', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            return res.status(404).json({message: 'Cannot find deliveryman account'});
+        }
+        res.status(200).json({message: responses[0].content});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+
+export const createAccount = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'create.deliveryman.account.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+                firstName: req.body.firstName,
+                name: req.body.name,
+                birthday: req.body.birthday,
+                phoneNumber: req.body.phoneNumber,
+                address: {
+                    street: req.body.address.street,
+                    postalCode: req.body.address.postalCode,
+                    city: req.body.address.city,
+                    country: req.body.address.country
+                }
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('deliverymans', 'create.deliveryman.account', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            return res.status(404).json({message: 'Cannot create deliveryman account'});
+        }
+        res.status(200).json({message: responses[0].content});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+
+export const updateMyAccount = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'update.deliveryman.account.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+                firstName: req.body.firstName,
+                name: req.body.name,
+                birthday: req.body.birthday,
+                phoneNumber: req.body.phoneNumber,
+                address: {
+                    street: req.body.address.street,
+                    postalCode: req.body.address.postalCode,
+                    city: req.body.address.city,
+                    country: req.body.address.country
+                }
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('deliverymans', 'update.deliveryman.account', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            return res.status(404).json({message: 'Cannot update deliveryman account'});
+        }
+        res.status(200).json({message: responses[0].content});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+
+export const deleteMyAccount = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'delete.deliveryman.account.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('deliverymans', 'delete.deliveryman.account', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            return res.status(404).json({message: 'Cannot delete deliveryman account'});
+        }
+        res.status(200).json({message: responses[0].content});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
@@ -28,13 +142,15 @@ export const getMyOrders = async (req: Request, res: Response) => {
     }
 };
 
-export const createAccount = async (req: Request, res: Response) => {
+export const updateOrder = async (req: Request, res: Response) => {
     try {
+        const id = req.params.id;
         //
     } catch (err) {
         //
     }
 };
+
 
 export const collectKitty = async (req: Request, res: Response) => {
     if (!req.body.amount || !req.body.mode) {
@@ -64,31 +180,5 @@ export const collectKitty = async (req: Request, res: Response) => {
     catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
-    }
-};
-
-export const updateOrder = async (req: Request, res: Response) => {
-    try {
-        const id = req.params.id;
-        //
-    } catch (err) {
-        //
-    }
-};
-
-export const updateMyAccount = async (req: Request, res: Response) => {
-    try {
-        //
-    } catch (err) {
-        //
-    }
-};
-
-
-export const deleteMyAccount = async (req: Request, res: Response) => {
-    try {
-        //
-    } catch (err) {
-        //
     }
 };

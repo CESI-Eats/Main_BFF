@@ -17,16 +17,110 @@ export const getMyAccount = async (req: Request, res: Response) => {
         await publishTopic('restorers', 'get.restorer.account', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
-        if (responses[0].success === false) {
+        if (!responses[0].success) {
             return res.status(404).json({message: 'Cannot find restorer account'});
         }
         res.status(200).json({message: responses[0].content});
-    } 
+    }
     catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
     }
 };
+
+export const createAccount = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'create.restorer.account.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+                name: req.body.name,
+                phoneNumber: req.body.phoneNumber,
+                address: {
+                    street: req.body.address.street,
+                    postalCode: req.body.address.postalCode,
+                    city: req.body.address.city,
+                    country: req.body.address.country
+                }
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('restorers', 'create.restorer.account', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            return res.status(404).json({message: 'Cannot create restorer account'});
+        }
+        res.status(200).json({message: responses[0].content});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+
+export const updateMyAccount = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'update.restorer.account.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+                name: req.body.name,
+                phoneNumber: req.body.phoneNumber,
+                address: {
+                    street: req.body.address.street,
+                    postalCode: req.body.address.postalCode,
+                    city: req.body.address.city,
+                    country: req.body.address.country
+                }
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('restorers', 'update.restorer.account', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            return res.status(404).json({message: 'Cannot update restorer account'});
+        }
+        res.status(200).json({message: responses[0].content});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+export const deleteMyAccount = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'delete.restorer.account.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('users', 'delete.restorer.account', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            return res.status(404).json({message: 'Cannot delete restorer account'});
+        }
+        res.status(200).json({message: responses[0].content});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+
 
 export const getMyCatalog = async (req: Request, res: Response) => {
     try {
@@ -44,6 +138,7 @@ export const getMenus = async (req: Request, res: Response) => {
         //
     }
 };
+
 export const getArticles = async (req: Request, res: Response) => {
     try {
         //
@@ -51,7 +146,6 @@ export const getArticles = async (req: Request, res: Response) => {
         //
     }
 };
-
 
 export const getAllMyOrders = async (req: Request, res: Response) => {
     try {
@@ -64,14 +158,6 @@ export const getAllMyOrders = async (req: Request, res: Response) => {
 };
 
 export const getMyOrders = async (req: Request, res: Response) => {
-    try {
-        //
-    } catch (err) {
-        //
-    }
-};
-
-export const createAccount = async (req: Request, res: Response) => {
     try {
         //
     } catch (err) {
@@ -117,20 +203,12 @@ export const collectKitty = async (req: Request, res: Response) => {
         if (failedResponseContents.length > 0) {
             return res.status(500).json({errors: failedResponseContents});
         }
-        
+
         res.status(200).json({message: 'Kitty collected'});
-    } 
+    }
     catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
-    }
-};
-
-export const updateMyAccount = async (req: Request, res: Response) => {
-    try {
-        //
-    } catch (err) {
-        //
     }
 };
 
@@ -151,14 +229,6 @@ export const updateMenu = async (req: Request, res: Response) => {
 };
 
 export const updateArticles = async (req: Request, res: Response) => {
-    try {
-        //
-    } catch (err) {
-        //
-    }
-};
-
-export const deleteMyAccount = async (req: Request, res: Response) => {
     try {
         //
     } catch (err) {
