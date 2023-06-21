@@ -53,7 +53,7 @@ export const createAccount = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            return res.status(404).json({message: 'Cannot create deliveryman account'});
+            return res.status(400).json({message: 'Cannot create deliveryman account'});
         }
         res.status(200).json({message: responses[0].content});
     }

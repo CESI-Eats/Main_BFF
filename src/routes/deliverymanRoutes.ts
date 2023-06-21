@@ -6,17 +6,17 @@ import {IdentityType} from "../enums/identityType";
 const router = express.Router();
 
 // Get
-router.get('/myaccount', deliverymanController.getMyAccount);
-router.get('/mycommands', deliverymanController.getAllMyCommands);
-router.get('/orders/:id', deliverymanController.getMyOrders);
+router.get('/myaccount', authorize([IdentityType.DELIVERYMAN]), deliverymanController.getMyAccount);
+router.get('/mycommands', authorize([IdentityType.DELIVERYMAN]), deliverymanController.getAllMyCommands);
+router.get('/orders/:id', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.getMyOrders);
 
 // Post
-router.post('/accounts', deliverymanController.createAccount);
+router.post('/accounts', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.createAccount);
 router.post('/collectkitty', authorize([IdentityType.DELIVERYMAN]), deliverymanController.collectKitty);
 
 // Put
-router.put('/orders/:id', deliverymanController.updateOrder);
-router.put('/myaccount', deliverymanController.updateMyAccount);
+router.put('/orders/:id', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.updateOrder);
+router.put('/myaccount', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.updateMyAccount);
 
 // Delete
 router.delete('/myaccount', deliverymanController.deleteMyAccount);
