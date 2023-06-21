@@ -201,30 +201,30 @@ export const createAccount = async (req: Request, res: Response) => {
     }
 };
 
-export const createOrder = async (req: Request, res: Response) => {
-    if (!req.body.amount || !req.body.mode) {
-        return res.status(400).json({message: 'Missing parameters amount or mode'});
+export const submitCart = async (req: Request, res: Response) => {
+    if (!req.body.mode) {
+        return res.status(400).json({message: 'Missing parameters mode or cartId'});
     }
     try {
-        const replyQueue = 'create.payment.reply';
+        const replyQueue = 'submit.cart.reply';
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
-            content: {id: (req as any).identityId, amount: req.body.amount, mode: req.body.mode},
+            content: {_idIdentity: (req as any).identityId, mode: req.body.mode},
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('users', 'create.payment', message);
+        await publishTopic('ordering', 'submit.cart', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         const failedResponseContents = responses
             .filter((response) => !response.success)
             .map((response) => response.content);
         if (failedResponseContents.length > 0) {
-            return res.status(500).json({errors: failedResponseContents});
+            return res.status(400).json({errors: failedResponseContents});
         }
 
-        res.status(200).json({message: 'Payment created'});
+        res.status(200).json({message: 'Cart submitted, payment successful'});
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});

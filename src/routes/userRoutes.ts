@@ -17,7 +17,7 @@ router.get('/orders/:id', userController.getOrder)
 
 // Post
 router.post('/accounts', userController.createAccount);
-router.post('/orders',authorize([IdentityType.USER]), userController.createOrder);
+router.post('/orders',authorize([IdentityType.USER]), userController.submitCart);
 
 // Put
 router.put('/myaccount', userController.updateMyAccount);
