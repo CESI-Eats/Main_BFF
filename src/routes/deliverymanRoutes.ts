@@ -7,16 +7,15 @@ const router = express.Router();
 
 // Get
 router.get('/myaccount', authorize([IdentityType.DELIVERYMAN]), deliverymanController.getMyAccount);
-router.get('/mycommands', authorize([IdentityType.DELIVERYMAN]), deliverymanController.getAllMyCommands);
-router.get('/orders/:id', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.getMyOrders);
+router.get('/myorders', authorize([IdentityType.DELIVERYMAN]), deliverymanController.getMyOrders);
 
 // Post
 router.post('/accounts', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.createAccount);
 router.post('/collectkitty', authorize([IdentityType.DELIVERYMAN]), deliverymanController.collectKitty);
 
 // Put
-router.put('/orders/:id', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.updateOrder);
 router.put('/myaccount', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.updateMyAccount);
+router.put('/orders/:id', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.updateOrder);
 
 // Delete
 router.delete('/myaccount', deliverymanController.deleteMyAccount);

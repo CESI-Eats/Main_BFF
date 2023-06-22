@@ -18,11 +18,26 @@ export const getMyAccount = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            return res.status(404).json({message: 'Cannot find restorer account'});
+            throw new Error('Cannot find user account');
         }
-        res.status(200).json({message: responses[0].content});
-    }
-    catch (err) {
+
+        // Need to adapt responses to this format:
+        const result =
+            {
+                firstName: '',
+                name: '',
+                birthday: '',
+                phoneNumber: '',
+                address: {
+                    street: '',
+                    postalCode: '',
+                    city: '',
+                    country: '',
+                }
+            };
+
+        res.status(200).json(result);
+    } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
     }
@@ -30,52 +45,43 @@ export const getMyAccount = async (req: Request, res: Response) => {
 
 export const getMyCart = async (req: Request, res: Response) => {
     try {
-        // Get /cart with token to filter
-        const cart = {
-            id: "1235",
+        const replyQueue = 'get.cart';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {id: (req as any).identityId},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('carts', 'get.cart', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot find cart');
+        }
+
+        // Need to adapt responses to this format:
+        const result = {
+            name: '',
+            price: '',
             menus: [
                 {
-                    id: 1,
-                    name: "Menu 1",
-                    description: "Description du menu 1",
-                    image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
-                    articles: [
-                        {id: 1, name: "Article 1"},
-                        {id: 2, name: "Article 2"},
-                        {id: 3, name: "Article 3"},
-                    ],
-                },
-                {
-                    id: 2,
-                    name: "Menu 2",
-                    description: "Description du menu 2",
-                    image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
-                    articles: [
-                        {id: 1, name: "Article 1"},
-                        {id: 2, name: "Article 2"},
-                        {id: 3, name: "Article 3"},
-                    ],
-                },
-                {
-                    id: 3,
-                    name: "Menu 3",
-                    description: "Description du menu 3",
-                    image: "https://dkrn4sk0rn31v.cloudfront.net/uploads/2022/10/o-que-e-e-como-comecar-com-golang.jpg",
-                    articles: [
-                        {id: 1, name: "Article 1"},
-                        {id: 2, name: "Article 2"},
-                        {id: 3, name: "Article 3"},
-                    ],
+                    id: '',
+                    name: '',
+                    description: '',
+                    amount: '',
                 }
             ]
         }
-        res.status(200).json(cart);
+
+        res.status(200).json(result);
     } catch (err) {
-        res.status(500).json({message: err});
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
-export const getAllCatalogs = async (req: Request, res: Response) => {
+export const getCatalogs = async (req: Request, res: Response) => {
     try {
         const replyQueue = 'get.restorers.accounts.reply';
         const correlationId = uuidv4();
@@ -89,14 +95,23 @@ export const getAllCatalogs = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
 
-        res.status(200).json({message: responses});
+        const result = [
+            {
+                id: '',
+                image: '',
+                name: '',
+                description: ''
+            }
+        ]
+
+        res.status(200).json(result);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
     }
 };
 
-export const getCatalogs = async (req: Request, res: Response) => {
+export const getMenus = async (req: Request, res: Response) => {
     try {
         const replyQueue = 'get.restorer.account.reply';
         const correlationId = uuidv4();
@@ -110,15 +125,41 @@ export const getCatalogs = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
 
-        res.status(200).json({message: responses});
+        if (!responses[0].success) {
+            throw new Error('Cannot find catalog');
+        }
+
+        const result = {
+            id: '',
+            image: '',
+            name: '',
+            description: '',
+            menus: [
+                {
+                    id: '',
+                    image: '',
+                    name: '',
+                    description: '',
+                    amount: '',
+                    articles: [
+                        {
+                            id: '',
+                            name: '',
+                        }
+                    ]
+                }
+            ],
+        }
+
+        res.status(200).json(result);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
     }
 };
 
-export const getMenus = async (req: Request, res: Response) => {
-    const id = req.params.id;
+export const getMenu = async (req: Request, res: Response) => {
+
     try {
         const replyQueue = 'get.restorer.account.reply';
         const correlationId = uuidv4();
@@ -132,16 +173,38 @@ export const getMenus = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
 
-        res.status(200).json({message: responses});
+        if (!responses[0].success) {
+            throw new Error('Cannot find catalog');
+        }
+
+        // Parse data to get only the menu wanted using req.params.id wich the id of the menu
+        const result = {
+            id: '',
+            image: '',
+            name: '',
+            description: '',
+            price: '',
+            articles: [
+                {
+                    id: '',
+                    image: '',
+                    name: '',
+                    description: '',
+                    price: ''
+                }
+            ]
+        }
+
+        res.status(200).json(result);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
     }
 };
 
-export const getOrders = async (req: Request, res: Response) => {
+export const getMyOrders = async (req: Request, res: Response) => {
     try {
-        const replyQueue = 'get.payments.reply';
+        const replyQueue = 'get.orders.for.user.reply';
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
@@ -149,44 +212,42 @@ export const getOrders = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('all', 'get.payments', message);
+
+        // Need to find an exchange name
+        await publishTopic('orders', 'get.orders.for.user', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         const failedResponseContents = responses
             .filter((response) => !response.success)
             .map((response) => response.content);
         if (failedResponseContents.length > 0) {
-            return res.status(500).json({errors: failedResponseContents});
+            throw new Error(failedResponseContents[0]);
         }
 
-        res.status(200).json({message: responses});
-    } catch (err) {
-        const errMessage = err instanceof Error ? err.message : 'An error occurred';
-        res.status(500).json({message: errMessage});
-    }
-};
+        const result = [{
+            status: '',
+            date: '',
+            amount: '',
+            restorer: {
+                id: '',
+                name: '',
+                address: ''
+            },
+            user: {
+                id: '',
+                name: '',
+                address: ''
+            },
+            menus: [
+                {
+                    id: '',
+                    image: '',
+                    name: ''
+                }
+            ]
+        }]
 
-export const getOrder = async (req: Request, res: Response) => {
-    try {
-        const replyQueue = 'get.payment.reply';
-        const correlationId = uuidv4();
-        const message: MessageLapinou = {
-            success: true,
-            content: {id: (req as any).params.id},
-            correlationId: correlationId,
-            replyTo: replyQueue
-        };
-        await publishTopic('all', 'get.payment', message);
-
-        const responses = await receiveResponses(replyQueue, correlationId, 1);
-        const failedResponseContents = responses
-            .filter((response) => !response.success)
-            .map((response) => response.content);
-        if (failedResponseContents.length > 0) {
-            return res.status(500).json({errors: failedResponseContents});
-        }
-
-        res.status(200).json({message: responses});
+        res.status(200).json(result);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
@@ -195,9 +256,36 @@ export const getOrder = async (req: Request, res: Response) => {
 
 export const createAccount = async (req: Request, res: Response) => {
     try {
-        res.status(200).json({message: "Account created"});
+        const replyQueue = 'create.user.account.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+                firstName: req.body.form.firstName,
+                name: req.body.form.name,
+                birthday: req.body.form.birthday,
+                phoneNumber: req.body.form.phoneNumber,
+                address: {
+                    street: req.body.form.street,
+                    postalCode: req.body.form.postalCode,
+                    city: req.body.form.city,
+                    country: req.body.form.country
+                }
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('users', 'create.user.account', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot create user account');
+        }
+        res.status(200).json({message: responses[0].content});
     } catch (err) {
-        res.status(500).json({message: err});
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
@@ -210,7 +298,10 @@ export const submitCart = async (req: Request, res: Response) => {
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
-            content: {_idIdentity: (req as any).identityId, mode: req.body.mode},
+            content: {
+                _idIdentity: (req as any).identityId,
+                mode: req.body.mode
+            },
             correlationId: correlationId,
             replyTo: replyQueue
         };
@@ -233,17 +324,94 @@ export const submitCart = async (req: Request, res: Response) => {
 
 export const updateMyAccount = async (req: Request, res: Response) => {
     try {
-        res.status(200).json({message: "Account updated"});
+        const replyQueue = 'update.user.account.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+                firstName: req.body.form.firstName,
+                name: req.body.form.name,
+                birthday: req.body.form.birthday,
+                phoneNumber: req.body.form.phoneNumber,
+                address: {
+                    street: req.body.form.street,
+                    postalCode: req.body.form.postalCode,
+                    city: req.body.form.city,
+                    country: req.body.form.country
+                }
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('users', 'update.user.account', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot create user account');
+        }
+        res.status(200).json({message: responses[0].content});
     } catch (err) {
-        res.status(500).json({message: err});
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
-export const updateMyCart = async (req: Request, res: Response) => {
+export const addToMyCart = async (req: Request, res: Response) => {
     try {
-        res.status(200).json({message: "Cart updated"});
+        const replyQueue = 'add.to.cart.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+                menu: {
+                    id: req.body.menu.id,
+                    amount: req.body.menu.amount
+                }
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('carts', 'add.to.cart', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot add to cart');
+        }
+        res.status(200).json({message: responses[0].content});
     } catch (err) {
-        res.status(500).json({message: err});
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+
+export const removeToMyCart = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'remove.to.cart.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+                menu: {
+                    id: req.body.menu.id,
+                    amount: req.body.menu.amount
+                }
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('carts', 'remove.to.cart', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot add to cart');
+        }
+        res.status(200).json({message: responses[0].content});
+    } catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
@@ -266,8 +434,7 @@ export const deleteAccount = async (req: Request, res: Response) => {
             return res.status(404).json({message: 'Cannot delete user account'});
         }
         res.status(200).json({message: responses[0].content});
-    }
-    catch (err) {
+    } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
     }
