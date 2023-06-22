@@ -7,8 +7,7 @@ const router = express.Router();
 
 // Get
 router.get('/myaccount', authorize([IdentityType.DELIVERYMAN]), deliverymanController.getMyAccount);
-router.get('/mycommands', authorize([IdentityType.DELIVERYMAN]), deliverymanController.getAllMyCommands);
-router.get('/orders/:id', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.getMyOrders);
+router.get('/myorders', authorize([IdentityType.DELIVERYMAN]), deliverymanController.getAllMyCommands);
 
 // Post
 router.post('/accounts', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.createAccount);
