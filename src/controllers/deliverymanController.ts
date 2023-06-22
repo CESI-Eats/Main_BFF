@@ -17,7 +17,7 @@ export const getMyAccount = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            return res.status(404).json({message: 'Cannot find deliveryman account'});
+            throw new Error('Cannot find deliveryman account');
         }
         res.status(200).json({message: responses[0].content});
     }
@@ -53,7 +53,7 @@ export const createAccount = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            return res.status(400).json({message: 'Cannot create deliveryman account'});
+            throw new Error('Cannot create deliveryman account');
         }
         res.status(200).json({message: responses[0].content});
     }
@@ -89,7 +89,7 @@ export const updateMyAccount = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            return res.status(404).json({message: 'Cannot update deliveryman account'});
+            throw new Error('Cannot update deliveryman account');
         }
         res.status(200).json({message: responses[0].content});
     }
@@ -115,7 +115,7 @@ export const deleteMyAccount = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            return res.status(404).json({message: 'Cannot delete deliveryman account'});
+            throw new Error('Cannot delete deliveryman account');
         }
         res.status(200).json({message: responses[0].content});
     }
@@ -125,29 +125,66 @@ export const deleteMyAccount = async (req: Request, res: Response) => {
     }
 };
 
-export const getAllMyCommands = async (req: Request, res: Response) => {
+export const getMyOrders = async (req: Request, res: Response) => {
     try {
-        //
+        const replyQueue = 'get.orders.for.deliveryman.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {id: (req as any).identityId},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+
+        // Need to find an exchange name
+        await publishTopic('ordering', 'get.orders.for.deliveryman', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        const failedResponseContents = responses
+            .filter((response) => !response.success)
+            .map((response) => response.content);
+        if (failedResponseContents.length > 0) {
+            throw new Error(failedResponseContents[0]);
+        }
+
+        const result = [{
+            status: '',
+            date: '',
+            restorer: {
+                id: '',
+                name: '',
+                address: ''
+            },
+            user: {
+                id: '',
+                name: '',
+                address: ''
+            },
+            menus: [
+                {
+                    id: '',
+                    image: '',
+                    name: ''
+                }
+            ]
+        }]
+
+        res.status(200).json(result);
     } catch (err) {
-        //
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
-export const getMyOrders = async (req: Request, res: Response) => {
-    try {
-        const id = req.params.id;
-        //
-    } catch (err) {
-        //
-    }
-};
 
 export const updateOrder = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
-        //
+        // Dont know what to send to Order API
+        res.status(200).json(id);
     } catch (err) {
-        //
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 

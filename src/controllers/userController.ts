@@ -202,9 +202,9 @@ export const getMenu = async (req: Request, res: Response) => {
     }
 };
 
-export const getOrders = async (req: Request, res: Response) => {
+export const getMyOrders = async (req: Request, res: Response) => {
     try {
-        const replyQueue = 'get.payments.reply';
+        const replyQueue = 'get.orders.for.user.reply';
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
@@ -212,7 +212,9 @@ export const getOrders = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('all', 'get.payments', message);
+
+        // Need to find an exchange name
+        await publishTopic('ordering', 'get.orders.for.user', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         const failedResponseContents = responses
@@ -222,30 +224,28 @@ export const getOrders = async (req: Request, res: Response) => {
             throw new Error(failedResponseContents[0]);
         }
 
-        const result = [
-            {
-                status: '',
-                date: '',
-                amount: '',
-                restorer: {
+        const result = [{
+            status: '',
+            date: '',
+            amount: '',
+            restorer: {
+                id: '',
+                name: '',
+                address: ''
+            },
+            user: {
+                id: '',
+                name: '',
+                address: ''
+            },
+            menus: [
+                {
                     id: '',
-                    name: '',
-                    address: ''
-                },
-                user: {
-                    id: '',
-                    name: '',
-                    address: ''
-                },
-                menus: [
-                    {
-                        id: '',
-                        image: '',
-                        name: ''
-                    }
-                ]
-            }
-        ]
+                    image: '',
+                    name: ''
+                }
+            ]
+        }]
 
         res.status(200).json(result);
     } catch (err) {
