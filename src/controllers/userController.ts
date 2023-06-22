@@ -214,7 +214,7 @@ export const getMyOrders = async (req: Request, res: Response) => {
         };
 
         // Need to find an exchange name
-        await publishTopic('ordering', 'get.orders.for.user', message);
+        await publishTopic('orders', 'get.orders.for.user', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         const failedResponseContents = responses
