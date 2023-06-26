@@ -52,7 +52,7 @@ export const createAccount = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            return res.status(404).json({message: 'Cannot create restorer account'});
+            throw new Error('Cannot find account');
         }
         res.status(200).json({message: responses[0].content});
     }
@@ -86,7 +86,7 @@ export const updateMyAccount = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            return res.status(404).json({message: 'Cannot update restorer account'});
+            throw new Error('Cannot find account');
         }
         res.status(200).json({message: responses[0].content});
     }
@@ -302,9 +302,35 @@ export const collectKitty = async (req: Request, res: Response) => {
 
 export const updateMyCatalog = async (req: Request, res: Response) => {
     try {
-        //
-    } catch (err) {
-        //
+        const replyQueue = 'update.restorer.catalog.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+                name: req.body.name,
+                phoneNumber: req.body.phoneNumber,
+                address: {
+                    street: req.body.address.street,
+                    postalCode: req.body.address.postalCode,
+                    city: req.body.address.city,
+                    country: req.body.address.country
+                }
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('restorers', 'update.restorer.catalog', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot find catalog');
+        }
+        res.status(200).json({message: responses[0].content});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
