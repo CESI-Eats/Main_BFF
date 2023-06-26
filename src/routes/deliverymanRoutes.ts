@@ -12,6 +12,7 @@ router.get('/myorders', authorize([IdentityType.DELIVERYMAN]), deliverymanContro
 // Post
 router.post('/accounts', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.createAccount);
 router.post('/collectkitty', authorize([IdentityType.DELIVERYMAN]), deliverymanController.collectKitty);
+router.post('/setorderdelivered', authorize([IdentityType.DELIVERYMAN]), deliverymanController.setOrderDelivered);
 
 // Put
 router.put('/myaccount', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.updateMyAccount);

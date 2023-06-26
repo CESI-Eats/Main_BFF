@@ -251,3 +251,30 @@ export const deleteMyOrders = async (req: Request, res: Response) => {
         //
     }
 };
+
+export const setOrderCooked = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'update.order.status.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {orderId: req.body.orderId, status: 'cooked'},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('ordering', 'update.order.status', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        const failedResponseContents = responses
+            .filter((response) => !response.success)
+            .map((response) => response.content);
+        if (failedResponseContents.length > 0) {
+            return res.status(404).json({errors: failedResponseContents});
+        }
+
+        res.status(200).json({message: 'Order updated'});
+    } catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
