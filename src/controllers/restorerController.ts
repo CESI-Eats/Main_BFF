@@ -156,14 +156,13 @@ export const getMenus = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorers', 'get.restorer.account', message);
+        await publishTopic('restorers', 'get.restorer.menus', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            throw new Error('Cannot find catalog');
+            throw new Error('Cannot find menus');
         }
         res.status(200).json({message: responses[0].content});
-        //
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
@@ -172,9 +171,25 @@ export const getMenus = async (req: Request, res: Response) => {
 
 export const getArticles = async (req: Request, res: Response) => {
     try {
-        //
+        const id = req.params.id;
+        const replyQueue = 'get.restorer.articles.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {id: (req as any).identityId},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('restorers', 'get.restorer.articles', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot find articles');
+        }
+        res.status(200).json({message: responses[0].content});
     } catch (err) {
-        //
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
