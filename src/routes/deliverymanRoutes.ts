@@ -16,7 +16,6 @@ router.post('/setorderdelivered', authorize([IdentityType.DELIVERYMAN]), deliver
 
 // Put
 router.put('/myaccount', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.updateMyAccount);
-router.put('/orders/:id', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.updateOrder);
 
 // Delete
 router.delete('/myaccount', deliverymanController.deleteMyAccount);
