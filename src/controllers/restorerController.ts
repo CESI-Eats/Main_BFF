@@ -18,7 +18,7 @@ export const getMyAccount = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            return res.status(404).json({message: 'Cannot find restorer account'});
+            throw new Error('Cannot find account');
         }
         res.status(200).json({message: responses[0].content});
     }
@@ -124,18 +124,49 @@ export const deleteMyAccount = async (req: Request, res: Response) => {
 
 export const getMyCatalog = async (req: Request, res: Response) => {
     try {
+        const replyQueue = 'get.restorer.catalog.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {id: (req as any).identityId},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('restorers', 'get.restorer.catalog', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot find catalog');
+        }
+        res.status(200).json({message: responses[0].content});
 
     } catch (err) {
-        //
-    }
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});    }
 };
 
 export const getMenus = async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
+        const replyQueue = 'get.restorer.menus.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {id: (req as any).identityId},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('restorers', 'get.restorer.account', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot find catalog');
+        }
+        res.status(200).json({message: responses[0].content});
         //
     } catch (err) {
-        //
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
