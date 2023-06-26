@@ -4,6 +4,7 @@ import express from 'express';
 import userRoutes from './routes/userRoutes'
 import restorerRoutes from './routes/restorerRoutes'
 import deliverymanRoutes from './routes/deliverymanRoutes'
+import backOfficeRoutes from './routes/backofficeRoutes'
 import { initLapinou } from './lapinou';
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/user', userRoutes)
 app.use('/restorer', restorerRoutes)
 app.use('/deliveryman', deliverymanRoutes)
 app.use('/doc', swaggerUi.serve, swaggerUi.setup(swaggerFile))
+app.use('/backoffice', backOfficeRoutes)
 
 initLapinou();
 
