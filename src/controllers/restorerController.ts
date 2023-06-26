@@ -405,6 +405,56 @@ export const deleteMyOrders = async (req: Request, res: Response) => {
     }
 };
 
+export const deleteArticle = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'delete.restorer.article.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('restorer', 'delete.restorer.article', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot delete article');
+        }
+        res.status(200).json({message: responses[0].content});
+    } catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+
+export const deleteMenu = async (req: Request, res: Response) => {
+    try {
+        const replyQueue = 'delete.restorer.menu.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                id: (req as any).identityId,
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('restorer', 'delete.restorer.menu', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot delete menu');
+        }
+        res.status(200).json({message: responses[0].content});
+    } catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
+    }
+};
+
 export const setOrderCooked = async (req: Request, res: Response) => {
     try {
         const replyQueue = 'update.order.status.reply';
