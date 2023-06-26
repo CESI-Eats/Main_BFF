@@ -16,7 +16,7 @@ router.get('/orders/:id', restorerController.getMyOrders);
 // Post
 router.post('/accounts', restorerController.createAccount);
 router.post('/menus', restorerController.createMenu);
-router.post('/articles', restorerController.createArticles);
+router.post('/articles', restorerController.createArticle);
 router.post('/collectkitty', authorize([IdentityType.RESTORER]), restorerController.collectKitty);
 router.post('/setordercooked', authorize([IdentityType.RESTORER]), restorerController.setOrderCooked);
 
