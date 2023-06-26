@@ -218,7 +218,6 @@ export const createMenu = async (req: Request, res: Response) => {
         const message: MessageLapinou = {
             success: true,
             content: {
-                id: (req as any).identityId,
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
@@ -247,7 +246,6 @@ export const createArticle = async (req: Request, res: Response) => {
         const message: MessageLapinou = {
             success: true,
             content: {
-                id: (req as any).identityId,
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
@@ -307,7 +305,6 @@ export const updateMyCatalog = async (req: Request, res: Response) => {
         const message: MessageLapinou = {
             success: true,
             content: {
-                id: (req as any).identityId,
                 name: req.body.name,
                 phoneNumber: req.body.phoneNumber,
                 address: {
@@ -336,17 +333,59 @@ export const updateMyCatalog = async (req: Request, res: Response) => {
 
 export const updateMenu = async (req: Request, res: Response) => {
     try {
-        //
-    } catch (err) {
-        //
+        const replyQueue = 'update.restorer.menu.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                name: req.body.name,
+                description: req.body.description,
+                image: req.body.image,
+                article: []
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('restorers', 'update.restorer.menu', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot find menu');
+        }
+        res.status(200).json({message: responses[0].content});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
-export const updateArticles = async (req: Request, res: Response) => {
+export const updateArticle = async (req: Request, res: Response) => {
     try {
-        //
-    } catch (err) {
-        //
+        const replyQueue = 'update.restorer.article.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {
+                name: req.body.name,
+                description: req.body.description,
+                image: req.body.image,
+                price: req.body.price
+            },
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('restorers', 'update.restorer.article', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot find article');
+        }
+        res.status(200).json({message: responses[0].content});
+    }
+    catch (err) {
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
 
