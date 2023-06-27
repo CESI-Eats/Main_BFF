@@ -38,6 +38,9 @@ export const createAccount = async (req: Request, res: Response) => {
                 id: (req as any).identityId,
                 name: req.body.name,
                 phoneNumber: req.body.phoneNumber,
+                restorerKitty: req.body.restorerKitty,
+                image: req.body.image,
+                description: req.body.description,
                 address: {
                     street: req.body.address.street,
                     postalCode: req.body.address.postalCode,
@@ -50,9 +53,12 @@ export const createAccount = async (req: Request, res: Response) => {
         };
         await publishTopic('restorers', 'create.restorer.account', message);
 
-        const responses = await receiveResponses(replyQueue, correlationId, 1);
-        if (!responses[0].success) {
-            throw new Error('Cannot find account');
+        const responses = await receiveResponses(replyQueue, correlationId, 2);
+        const failedResponseContents = responses
+            .filter((response) => !response.success)
+            .map((response) => response.content);
+        if (failedResponseContents.length > 0) {
+            return res.status(500).json({errors: failedResponseContents});
         }
         res.status(200).json({message: responses[0].content});
     }
@@ -132,7 +138,7 @@ export const getMyCatalog = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorers', 'get.restorer.catalog', message);
+        await publishTopic('catalog', 'get.restorer.catalog', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {

@@ -7,14 +7,14 @@ const router = express.Router();
 
 // Get
 router.get('/myaccount', authorize([IdentityType.RESTORER]),restorerController.getMyAccount);
-router.get('/catalog', restorerController.getMyCatalog);
+router.get('/catalog/:id', authorize([IdentityType.RESTORER]),restorerController.getMyCatalog);
 router.get('/:catalogId/menus/:id', restorerController.getMenus);
 router.get('/:catalogId/articles/:id', restorerController.getArticles);
 router.get('/myorders', restorerController.getAllMyOrders);
 router.get('/orders/:id', restorerController.getMyOrders);
 
 // Post
-router.post('/accounts', restorerController.createAccount);
+router.post('/accounts', authorize([IdentityType.RESTORER]), restorerController.createAccount);
 router.post('/:catalogId/menus', restorerController.createMenu);
 router.post('/:catalogId/articles', restorerController.createArticle);
 router.post('/collectkitty', authorize([IdentityType.RESTORER]), restorerController.collectKitty);
