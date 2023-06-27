@@ -220,7 +220,7 @@ export const getMenu = async (req: Request, res: Response) => {
             throw new Error(`Cannot find menu with ID ${req.params.id}`);
         }
 
-// Replace article IDs with catalog articles
+        // Replace article IDs with catalog articles
         const articles = menu.articles.map((articleId: string) => {
             const article = catalog?.content.articles.find((a: any) => a.id === articleId);
             if (article) {
@@ -263,7 +263,6 @@ export const getMyOrders = async (req: Request, res: Response) => {
             replyTo: replyQueue
         };
 
-        // Need to find an exchange name
         await publishTopic('orders', 'get.orders.for.user', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
@@ -273,29 +272,68 @@ export const getMyOrders = async (req: Request, res: Response) => {
         if (failedResponseContents.length > 0) {
             throw new Error(failedResponseContents[0]);
         }
+        const order = responses.find(m => m.sender == 'order');
 
+        // Get user and restorer infos using a single topic
+        const accountReplyQueue = 'get.user.and.restorer';
+        const accountCorrelationId = uuidv4();
+        const accountMessage: MessageLapinou = {
+            success: true,
+            content: {
+                userId: order?.content._idUser,
+                restorerId: order?.content._idRestorer
+            },
+            correlationId: accountCorrelationId,
+            replyTo: accountReplyQueue
+        };
+        await publishTopic('accounts', 'get.user.and.restorer', accountMessage);
+        const accountResponses = await receiveResponses(accountReplyQueue, accountCorrelationId, 1);
+        const account = accountResponses.find(m => m.sender == 'account');
+
+        // Get menus infos using _idRestorer
+        const catalogReplyQueue = 'get.catalog';
+        const catalogCorrelationId = uuidv4();
+        const catalogMessage: MessageLapinou = {
+            success: true,
+            content: { id: order?.content._idRestorer },
+            correlationId: catalogCorrelationId,
+            replyTo: catalogReplyQueue
+        };
+        await publishTopic('catalogs', 'get.catalog', catalogMessage);
+        const catalogResponses = await receiveResponses(catalogReplyQueue, catalogCorrelationId, 1);
+        const catalog = catalogResponses.find(m => m.sender == 'catalog');
+
+        // Transform order?.content._idMenus which contains a list of ids into the format wanted
+        const menus = order?.content._idMenus.map((menuId: string) => {
+            const menu = catalog?.content.menus.find((m: any) => m.id === menuId);
+            if (menu) {
+                return {
+                    id: menu.id,
+                    image: menu.image,
+                    name: menu.name
+                };
+            } else {
+                throw new Error(`Menu with ID ${menuId} not found in the catalog`);
+            }
+        });
+
+        // Associate data
         const result = [{
-            status: '',
-            date: '',
-            amount: '',
+            status: order?.content.status,
+            date: order?.content.date,
+            amount: order?.content.amount,
             restorer: {
-                id: '',
-                name: '',
-                address: ''
+                id: account?.content.restorerId,
+                name: account?.content.restorerName,
+                address: account?.content.restorerAddress
             },
             user: {
-                id: '',
-                name: '',
-                address: ''
+                id: account?.content.userId,
+                name: account?.content.userName,
+                address: account?.content.userAddress
             },
-            menus: [
-                {
-                    id: '',
-                    image: '',
-                    name: ''
-                }
-            ]
-        }]
+            menus: menus || []
+        }];
 
         res.status(200).json(result);
     } catch (err) {
