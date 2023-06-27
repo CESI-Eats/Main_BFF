@@ -272,75 +272,69 @@ export const getMyOrders = async (req: Request, res: Response) => {
         if (failedResponseContents.length > 0) {
             throw new Error(failedResponseContents[0]);
         }
-        const order = responses.find(m => m.sender == 'order');
+        const orders = responses.find(m => m.sender == 'order');
 
-        // Get user and restorer infos using a single topic
-        const accountReplyQueue = 'get.user.and.restorer';
-        const accountCorrelationId = uuidv4();
-        const accountMessage: MessageLapinou = {
+        // Get user and restorer infos as well as catalog using a single topic
+        const accountAndCatalogReplyQueue = 'get.users.restorers.and.catalogs';
+        const accountAndCatalogCorrelationId = uuidv4();
+        const accountAndCatalogMessage: MessageLapinou = {
             success: true,
             content: {
-                userId: order?.content._idUser,
-                restorerId: order?.content._idRestorer
+                userIds: orders?.content.map((order: any) => order._idUser),
+                restorerIds: orders?.content.map((order: any) => order._idRestorer)
             },
-            correlationId: accountCorrelationId,
-            replyTo: accountReplyQueue
+            correlationId: accountAndCatalogCorrelationId,
+            replyTo: accountAndCatalogReplyQueue
         };
-        await publishTopic('accounts', 'get.user.and.restorer', accountMessage);
-        const accountResponses = await receiveResponses(accountReplyQueue, accountCorrelationId, 1);
-        const account = accountResponses.find(m => m.sender == 'account');
-
-        // Get menus infos using _idRestorer
-        const catalogReplyQueue = 'get.catalog';
-        const catalogCorrelationId = uuidv4();
-        const catalogMessage: MessageLapinou = {
-            success: true,
-            content: { id: order?.content._idRestorer },
-            correlationId: catalogCorrelationId,
-            replyTo: catalogReplyQueue
-        };
-        await publishTopic('catalogs', 'get.catalog', catalogMessage);
-        const catalogResponses = await receiveResponses(catalogReplyQueue, catalogCorrelationId, 1);
-        const catalog = catalogResponses.find(m => m.sender == 'catalog');
-
+        await publishTopic('orders', 'get.users.restorers.and.catalogs', accountAndCatalogMessage);
+        const accountAndCatalogResponses = await receiveResponses(accountAndCatalogReplyQueue, accountAndCatalogCorrelationId, 2);
+        const accounts = accountAndCatalogResponses.find(m => m.sender == 'account');
+        const catalogs = accountAndCatalogResponses.find(m => m.sender == 'catalog');
         // Transform order?.content._idMenus which contains a list of ids into the format wanted
-        const menus = order?.content._idMenus.map((menuId: string) => {
-            const menu = catalog?.content.menus.find((m: any) => m.id === menuId);
-            if (menu) {
-                return {
-                    id: menu.id,
-                    image: menu.image,
-                    name: menu.name
-                };
-            } else {
-                throw new Error(`Menu with ID ${menuId} not found in the catalog`);
-            }
+        const menus = orders?.content.map((order: any) => {
+            const orderMenus = order._idMenus.map((menuId: string) => {
+                const catalog = catalogs?.content.find((c: any) => c.restorerId === order._idRestorer);
+                if (catalog) {
+                    const menu = catalog.menus.find((m: any) => m.id === menuId);
+                    if (menu) {
+                        return {
+                            id: menu.id,
+                            image: menu.image,
+                            name: menu.name
+                        };
+                    } else {
+                        throw new Error(`Menu with ID ${menuId} not found in the catalog`);
+                    }
+                } else {
+                    throw new Error(`Catalog not found for restorer with ID ${order._idRestorer}`);
+                }
+            });
+            return {
+                status: order.status,
+                date: order.date,
+                amount: order.amount,
+                restorer: {
+                    id: accounts?.content.restorers.find((r: any) => r.id === order._idRestorer)?.id,
+                    name: accounts?.content.restorers.find((r: any) => r.id === order._idRestorer)?.name,
+                    address: accounts?.content.restorers.find((r: any) => r.id === order._idRestorer)?.address
+                },
+                user: {
+                    id: accounts?.content.users.find((u: any) => u.id === order._idUser)?.id,
+                    name: accounts?.content.users.find((u: any) => u.id === order._idUser)?.name,
+                    address: accounts?.content.users.find((u: any) => u.id === order._idUser)?.address
+                },
+                menus: orderMenus || []
+            };
         });
 
-        // Associate data
-        const result = [{
-            status: order?.content.status,
-            date: order?.content.date,
-            amount: order?.content.amount,
-            restorer: {
-                id: account?.content.restorerId,
-                name: account?.content.restorerName,
-                address: account?.content.restorerAddress
-            },
-            user: {
-                id: account?.content.userId,
-                name: account?.content.userName,
-                address: account?.content.userAddress
-            },
-            menus: menus || []
-        }];
-
-        res.status(200).json(result);
+        res.status(200).json(menus);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
     }
 };
+
+
 
 export const createAccount = async (req: Request, res: Response) => {
     try {
