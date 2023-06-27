@@ -1,5 +1,4 @@
 import {Request, Response} from 'express';
-import {IdentityType} from "../enums/identityType";
 import {v4 as uuidv4} from "uuid";
 import {MessageLapinou, publishTopic, receiveResponses} from "../services/lapinouService";
 
