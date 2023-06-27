@@ -18,6 +18,6 @@ router.post('/setorderdelivered', authorize([IdentityType.DELIVERYMAN]), deliver
 router.put('/myaccount', authorize([IdentityType.DELIVERYMAN]),  deliverymanController.updateMyAccount);
 
 // Delete
-router.delete('/myaccount', deliverymanController.deleteMyAccount);
+router.delete('/myaccount', authorize([IdentityType.DELIVERYMAN]), deliverymanController.deleteMyAccount);
 
 export default router;
