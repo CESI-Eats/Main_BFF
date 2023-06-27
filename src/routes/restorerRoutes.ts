@@ -7,27 +7,30 @@ const router = express.Router();
 
 // Get
 router.get('/myaccount', authorize([IdentityType.RESTORER]),restorerController.getMyAccount);
-router.get('/mycatalogs', restorerController.getMyCatalog);
-router.get('/menus/:id', restorerController.getMenus);
-router.get('/articles/:id', restorerController.getArticles);
+router.get('/catalog/:id', authorize([IdentityType.RESTORER]),restorerController.getMyCatalog);
+router.get('/:catalogId/menus/:id', restorerController.getMenus);
+router.get('/:catalogId/articles/:id', restorerController.getArticles);
 router.get('/myorders', restorerController.getAllMyOrders);
 router.get('/orders/:id', restorerController.getMyOrders);
 
 // Post
-router.post('/accounts', restorerController.createAccount);
-router.post('/menus', restorerController.createMenu);
-router.post('/articles', restorerController.createArticles);
+router.post('/accounts', authorize([IdentityType.RESTORER]), restorerController.createAccount);
+router.post('/:catalogId/menus', restorerController.createMenu);
+router.post('/:catalogId/articles', restorerController.createArticle);
 router.post('/collectkitty', authorize([IdentityType.RESTORER]), restorerController.collectKitty);
 router.post('/setordercooked', authorize([IdentityType.RESTORER]), restorerController.setOrderCooked);
 
 // Put
 router.put('/myaccount', restorerController.updateMyAccount);
-router.put('/mycatalogs', restorerController.updateMyCatalog);
-router.put('/menus/:id', restorerController.updateMenu);
-router.put('/articles/:id', restorerController.updateArticles);
+router.put('/catalog:id', restorerController.updateMyCatalog);
+router.put('/:catalogId/menus/:id', restorerController.updateMenu);
+router.put('/:catalogId/articles/:id', restorerController.updateArticle);
 
 // Delete
-router.put('/myaccount', restorerController.deleteMyAccount);
-router.put('/myorders', restorerController.deleteAllMyOrders);
-router.put('/orders/:id', restorerController.deleteMyOrders);
+router.delete('/myaccount', restorerController.deleteMyAccount);
+router.delete('/myorders', restorerController.deleteAllMyOrders);
+router.delete('/orders/:id', restorerController.deleteMyOrders);
+router.delete('/:catalogId/menus/:id', restorerController.deleteMenu);
+router.delete('/:catalogId/articles/:id', restorerController.deleteArticle);
+
 export default router;
