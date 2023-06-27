@@ -20,19 +20,19 @@ export const getMyAccount = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot find user account');
         }
-
+        const accountResponse = responses.find(m => m.sender == 'account')
         // Need to adapt responses to this format:
         const result =
             {
-                firstName: '',
-                name: '',
-                birthday: '',
-                phoneNumber: '',
+                firstName: accountResponse?.content.firstName,
+                name: accountResponse?.content.name,
+                birthday: accountResponse?.content.birthday,
+                phoneNumber: accountResponse?.content.phoneNumber,
                 address: {
-                    street: '',
-                    postalCode: '',
-                    city: '',
-                    country: '',
+                    street: accountResponse?.content.address.street,
+                    postalCode: accountResponse?.content.address.postalCode,
+                    city: accountResponse?.content.address.city,
+                    country: accountResponse?.content.address.country,
                 }
             };
 
@@ -45,9 +45,10 @@ export const getMyAccount = async (req: Request, res: Response) => {
 
 export const getMyCart = async (req: Request, res: Response) => {
     try {
-        const replyQueue = 'get.cart';
-        const correlationId = uuidv4();
-        const message: MessageLapinou = {
+        // Get Cart
+        let replyQueue = 'get.cart';
+        let correlationId = uuidv4();
+        let message: MessageLapinou = {
             success: true,
             content: {id: (req as any).identityId},
             correlationId: correlationId,
@@ -55,24 +56,50 @@ export const getMyCart = async (req: Request, res: Response) => {
         };
         await publishTopic('carts', 'get.cart', message);
 
-        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        let responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
             throw new Error('Cannot find cart');
         }
+        const cart = responses.find(m => m.sender == 'cart')
 
-        // Need to adapt responses to this format:
-        const result = {
-            name: '',
-            price: '',
-            menus: [
-                {
-                    id: '',
-                    name: '',
-                    description: '',
-                    amount: '',
-                }
-            ]
+        // Get Catalog
+        replyQueue = 'get.catalog';
+        correlationId = uuidv4();
+        message = {
+            success: true,
+            content: {id: cart?.content._idRestorer},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+        await publishTopic('catalogs', 'get.catalog', message);
+
+        responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot find catalog');
         }
+        const catalog = responses.find(m => m.sender == 'catalog')
+
+        // Replace menu IDs with catalog menus
+        const menus = cart?.content.menus.map((menuId: string) => {
+            const menu = catalog?.content.find((m: any) => m.id === menuId);
+            if (menu) {
+                return {
+                    id: menu.id,
+                    name: menu.name,
+                    description: menu.description,
+                    amount: menu.amount
+                };
+            } else {
+                throw new Error(`Menu with ID ${menuId} not found in the catalog`);
+            }
+        });
+
+        // Construct the result object
+        const result = {
+            name: catalog?.content.description,
+            amount: cart?.content.price,
+            menus: menus || []
+        };
 
         res.status(200).json(result);
     } catch (err) {
@@ -83,7 +110,7 @@ export const getMyCart = async (req: Request, res: Response) => {
 
 export const getCatalogs = async (req: Request, res: Response) => {
     try {
-        const replyQueue = 'get.restorers.accounts.reply';
+        const replyQueue = 'get.catalogs';
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
@@ -91,16 +118,16 @@ export const getCatalogs = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorers', 'get.restorers.accounts', message);
+        await publishTopic('catalogs', 'get.catalogs', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
-
+        const catalog = responses.find(m => m.sender == 'catalog')
         const result = [
             {
-                id: '',
-                image: '',
-                name: '',
-                description: ''
+                id: catalog?.content.id,
+                image: catalog?.content.image,
+                name: catalog?.content.name,
+                description: catalog?.content.description
             }
         ]
 
@@ -113,7 +140,7 @@ export const getCatalogs = async (req: Request, res: Response) => {
 
 export const getMenus = async (req: Request, res: Response) => {
     try {
-        const replyQueue = 'get.restorer.account.reply';
+        const replyQueue = 'get.catalog';
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
@@ -121,35 +148,45 @@ export const getMenus = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorers', 'get.restorer.account', message);
+        await publishTopic('catalogs', 'get.catalog', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
+        const catalog = responses.find(m => m.sender == 'catalog')
 
         if (!responses[0].success) {
             throw new Error('Cannot find catalog');
         }
 
-        const result = {
-            id: '',
-            image: '',
-            name: '',
-            description: '',
-            menus: [
-                {
-                    id: '',
-                    image: '',
-                    name: '',
-                    description: '',
-                    amount: '',
-                    articles: [
-                        {
-                            id: '',
-                            name: '',
-                        }
-                    ]
+        // Replace article IDs with catalog articles
+        const menus = catalog?.content.menus.map((menu: any) => {
+            const articles = menu.articles.map((articleId: string) => {
+                const article = catalog?.content.articles.find((a: any) => a.id === articleId);
+                if (article) {
+                    return {
+                        id: article.id,
+                        name: article.name
+                    };
+                } else {
+                    throw new Error(`Article with ID ${articleId} not found in the catalog`);
                 }
-            ],
-        }
+            });
+            return {
+                id: menu.id,
+                image: menu.image,
+                name: menu.name,
+                description: menu.description,
+                amount: menu.amount,
+                articles: articles || []
+            };
+        });
+
+        const result = {
+            id: catalog?.content.id,
+            image: catalog?.content.image,
+            name: catalog?.content.name,
+            description: catalog?.content.description,
+            menus: menus || []
+        };
 
         res.status(200).json(result);
     } catch (err) {
@@ -159,9 +196,8 @@ export const getMenus = async (req: Request, res: Response) => {
 };
 
 export const getMenu = async (req: Request, res: Response) => {
-
     try {
-        const replyQueue = 'get.restorer.account.reply';
+        const replyQueue = 'get.catalog';
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
@@ -169,31 +205,45 @@ export const getMenu = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorers', 'get.restorer.account', message);
+        await publishTopic('catalogs', 'get.catalog', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
+        const catalog = responses.find(m => m.sender == 'catalog')
 
         if (!responses[0].success) {
             throw new Error('Cannot find catalog');
         }
 
-        // Parse data to get only the menu wanted using req.params.id wich the id of the menu
-        const result = {
-            id: '',
-            image: '',
-            name: '',
-            description: '',
-            price: '',
-            articles: [
-                {
-                    id: '',
-                    image: '',
-                    name: '',
-                    description: '',
-                    price: ''
-                }
-            ]
+        // Find the specific menu using req.params.id
+        const menu = catalog?.content.menus.find((m: any) => m.id === req.params.id);
+        if (!menu) {
+            throw new Error(`Cannot find menu with ID ${req.params.id}`);
         }
+
+// Replace article IDs with catalog articles
+        const articles = menu.articles.map((articleId: string) => {
+            const article = catalog?.content.articles.find((a: any) => a.id === articleId);
+            if (article) {
+                return {
+                    id: article.id,
+                    image: article.image,
+                    name: article.name,
+                    description: article.description,
+                    price: article.price
+                };
+            } else {
+                throw new Error(`Article with ID ${articleId} not found in the catalog`);
+            }
+        });
+
+        const result = {
+            id: menu.id,
+            image: menu.image,
+            name: menu.name,
+            description: menu.description,
+            price: menu.price,
+            articles: articles || []
+        };
 
         res.status(200).json(result);
     } catch (err) {
