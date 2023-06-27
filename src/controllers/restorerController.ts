@@ -134,7 +134,7 @@ export const getMyCatalog = async (req: Request, res: Response) => {
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
-            content: {id: (req as any).identityId},
+            content: {id: req.params.id},
             correlationId: correlationId,
             replyTo: replyQueue
         };
@@ -224,6 +224,8 @@ export const createMenu = async (req: Request, res: Response) => {
         const message: MessageLapinou = {
             success: true,
             content: {
+                catalogId: req.params.catalogId,
+                id: uuidv4(),
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
@@ -232,7 +234,7 @@ export const createMenu = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorers', 'create.restorer.menu', message);
+        await publishTopic('catalog', 'create.restorer.menu', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
@@ -252,6 +254,8 @@ export const createArticle = async (req: Request, res: Response) => {
         const message: MessageLapinou = {
             success: true,
             content: {
+                catalogId: req.params.catalogId,
+                id: uuidv4(),
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
@@ -260,7 +264,7 @@ export const createArticle = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorers', 'create.restorer.article', message);
+        await publishTopic('catalog', 'create.restorer.article', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
