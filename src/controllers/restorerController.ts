@@ -315,23 +315,19 @@ export const updateMyCatalog = async (req: Request, res: Response) => {
         const message: MessageLapinou = {
             success: true,
             content: {
+                id: req.params.id,
                 name: req.body.name,
-                phoneNumber: req.body.phoneNumber,
-                address: {
-                    street: req.body.address.street,
-                    postalCode: req.body.address.postalCode,
-                    city: req.body.address.city,
-                    country: req.body.address.country
-                }
+                description: req.body.description,
+                image: req.body.image,
             },
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorers', 'update.restorer.catalog', message);
+        await publishTopic('catalog', 'update.restorer.catalog', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            throw new Error('Cannot find catalog');
+            throw new Error('Cannot update catalog');
         }
         res.status(200).json({message: responses[0].content});
     }
@@ -348,15 +344,17 @@ export const updateMenu = async (req: Request, res: Response) => {
         const message: MessageLapinou = {
             success: true,
             content: {
+                catalogId: req.params.catalogId,
+                id: req.params.id,
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
-                article: []
+                articles: [req.body.articles]
             },
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorers', 'update.restorer.menu', message);
+        await publishTopic('catalog', 'update.restorer.menu', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
@@ -377,6 +375,8 @@ export const updateArticle = async (req: Request, res: Response) => {
         const message: MessageLapinou = {
             success: true,
             content: {
+                catalogId: req.params.catalogId,
+                id: req.params.id,
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
@@ -385,7 +385,7 @@ export const updateArticle = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorers', 'update.restorer.article', message);
+        await publishTopic('catalog', 'update.restorer.article', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
@@ -422,12 +422,13 @@ export const deleteArticle = async (req: Request, res: Response) => {
         const message: MessageLapinou = {
             success: true,
             content: {
-                id: (req as any).identityId,
+                catalogId: req.params.catalogId,
+                id: req.params.id,
             },
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorer', 'delete.restorer.article', message);
+        await publishTopic('catalog', 'delete.restorer.article', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
@@ -447,12 +448,13 @@ export const deleteMenu = async (req: Request, res: Response) => {
         const message: MessageLapinou = {
             success: true,
             content: {
-                id: (req as any).identityId,
+                catalogId: req.params.catalogId,
+                id: req.params.id,
             },
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('restorer', 'delete.restorer.menu', message);
+        await publishTopic('catalog', 'delete.restorer.menu', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {

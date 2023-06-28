@@ -21,16 +21,16 @@ router.post('/collectkitty', authorize([IdentityType.RESTORER]), restorerControl
 router.post('/setordercooked', authorize([IdentityType.RESTORER]), restorerController.setOrderCooked);
 
 // Put
-router.put('/myaccount', restorerController.updateMyAccount);
-router.put('/catalog:id', restorerController.updateMyCatalog);
-router.put('/:catalogId/menus/:id', restorerController.updateMenu);
-router.put('/:catalogId/articles/:id', restorerController.updateArticle);
+router.put('/myaccount', authorize([IdentityType.RESTORER]), restorerController.updateMyAccount);
+router.put('/catalog/:id', authorize([IdentityType.RESTORER]), restorerController.updateMyCatalog);
+router.put('/:catalogId/menus/:id', authorize([IdentityType.RESTORER]), restorerController.updateMenu);
+router.put('/:catalogId/articles/:id', authorize([IdentityType.RESTORER]), restorerController.updateArticle);
 
 // Delete
 router.delete('/myaccount', restorerController.deleteMyAccount);
 router.delete('/myorders', restorerController.deleteAllMyOrders);
 router.delete('/orders/:id', restorerController.deleteMyOrders);
-router.delete('/:catalogId/menus/:id', restorerController.deleteMenu);
-router.delete('/:catalogId/articles/:id', restorerController.deleteArticle);
+router.delete('/:catalogId/menus/:id', authorize([IdentityType.RESTORER]), restorerController.deleteMenu);
+router.delete('/:catalogId/articles/:id', authorize([IdentityType.RESTORER]), restorerController.deleteArticle);
 
 export default router;
