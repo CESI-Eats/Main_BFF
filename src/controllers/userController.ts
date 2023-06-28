@@ -121,14 +121,15 @@ export const getCatalogs = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         const catalog = responses.find(m => m.sender == 'catalog')
-        const result = [
-            {
-                id: catalog?.content.id,
-                image: catalog?.content.image,
-                name: catalog?.content.name,
-                description: catalog?.content.description
-            }
-        ]
+        // Map the received content to the updated data structure
+        const result = catalog?.content.map((item: any) => {
+            return {
+                id: item._id,
+                image: item.image,
+                name: item.name,
+                description: item.description
+            };
+        });
 
         res.status(200).json(result);
     } catch (err) {
@@ -150,37 +151,42 @@ export const getMenus = async (req: Request, res: Response) => {
         await publishTopic('catalogs', 'get.catalog', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
-        const catalog = responses.find(m => m.sender == 'catalog')
-
         if (!responses[0].success) {
             throw new Error('Cannot find catalog');
         }
-
-        // Replace article IDs with catalog articles
+        const catalog = responses[0];
+        console.log(catalog?.content)
         const menus = catalog?.content.menus.map((menu: any) => {
-            const articles = menu.articles.map((articleId: string) => {
-                const article = catalog?.content.articles.find((a: any) => a.id === articleId);
+            const amount = menu.articles.reduce((sum: number, articleId: string) => {
+                const article = catalog?.content.articles.find((a: any) => a._id === articleId);
                 if (article) {
-                    return {
-                        id: article.id,
-                        name: article.name
-                    };
+                    return sum + article.price;
                 } else {
                     throw new Error(`Article with ID ${articleId} not found in the catalog`);
                 }
-            });
+            }, 0);
             return {
-                id: menu.id,
+                id: menu._id,
                 image: menu.image,
                 name: menu.name,
                 description: menu.description,
-                amount: menu.amount,
-                articles: articles || []
+                amount: amount,
+                articles: menu.articles.map((articleId: string) => {
+                    const article = catalog?.content.articles.find((a: any) => a._id === articleId);
+                    if (article) {
+                        return {
+                            id: article._id,
+                            name: article.name
+                        };
+                    } else {
+                        throw new Error(`Article with ID ${articleId} not found in the catalog`);
+                    }
+                })
             };
         });
 
         const result = {
-            id: catalog?.content.id,
+            id: catalog?.content._id,
             image: catalog?.content.image,
             name: catalog?.content.name,
             description: catalog?.content.description,
@@ -207,14 +213,13 @@ export const getMenu = async (req: Request, res: Response) => {
         await publishTopic('catalogs', 'get.catalog', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
-        const catalog = responses.find(m => m.sender == 'catalog')
-
         if (!responses[0].success) {
             throw new Error('Cannot find catalog');
         }
+        const catalog = responses[0]
 
         // Find the specific menu using req.params.id
-        const menu = catalog?.content.menus.find((m: any) => m.id === req.params.id);
+        const menu = catalog?.content.menus.find((m: any) => m._id === req.params.id);
         if (!menu) {
             throw new Error(`Cannot find menu with ID ${req.params.id}`);
         }
@@ -228,19 +233,26 @@ export const getMenu = async (req: Request, res: Response) => {
                     image: article.image,
                     name: article.name,
                     description: article.description,
-                    price: article.price
+                    amount: article.price
                 };
             } else {
                 throw new Error(`Article with ID ${articleId} not found in the catalog`);
             }
         });
-
+        const amount = menu.articles.reduce((sum: number, articleId: string) => {
+            const article = catalog?.content.articles.find((a: any) => a._id === articleId);
+            if (article) {
+                return sum + article.price;
+            } else {
+                throw new Error(`Article with ID ${articleId} not found in the catalog`);
+            }
+        }, 0);
         const result = {
             id: menu.id,
             image: menu.image,
             name: menu.name,
             description: menu.description,
-            price: menu.price,
+            amount: amount,
             articles: articles || []
         };
 
@@ -332,7 +344,6 @@ export const getMyOrders = async (req: Request, res: Response) => {
         res.status(500).json({message: errMessage});
     }
 };
-
 
 
 export const createAccount = async (req: Request, res: Response) => {
