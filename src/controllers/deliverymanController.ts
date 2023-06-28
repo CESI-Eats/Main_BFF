@@ -40,7 +40,25 @@ export const getMyAccount = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot find deliveryman account');
         }
-        res.status(200).json({message: responses[0].content});
+        const accountResponse = responses[0];
+
+
+        const result =
+            {
+                firstName: accountResponse?.content.firstName,
+                name: accountResponse?.content.name,
+                birthday: accountResponse?.content.birthday,
+                phoneNumber: accountResponse?.content.phoneNumber,
+                kitty: accountResponse?.content.kitty,
+                address: {
+                    street: accountResponse?.content.address.street,
+                    postalCode: accountResponse?.content.address.postalCode,
+                    city: accountResponse?.content.address.city,
+                    country: accountResponse?.content.address.country,
+                }
+            };
+
+        res.status(200).json(result);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
