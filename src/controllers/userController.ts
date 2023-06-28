@@ -19,7 +19,7 @@ export const getMyAccount = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot find user account');
         }
-        const accountResponse = responses.find(m => m.sender == 'account')
+        const accountResponse = responses[0];
         // Need to adapt responses to this format:
         const result =
             {
@@ -343,15 +343,15 @@ export const createAccount = async (req: Request, res: Response) => {
             success: true,
             content: {
                 id: (req as any).identityId,
-                firstName: req.body.form.firstName,
-                name: req.body.form.name,
-                birthday: req.body.form.birthday,
-                phoneNumber: req.body.form.phoneNumber,
+                firstName: req.body.firstName,
+                name: req.body.name,
+                birthday: req.body.birthday,
+                phoneNumber: req.body.phoneNumber,
                 address: {
-                    street: req.body.form.street,
-                    postalCode: req.body.form.postalCode,
-                    city: req.body.form.city,
-                    country: req.body.form.country
+                    street: req.body.address.street,
+                    postalCode: req.body.address.postalCode,
+                    city: req.body.address.city,
+                    country: req.body.address.country
                 }
             },
             correlationId: correlationId,
@@ -411,15 +411,15 @@ export const updateMyAccount = async (req: Request, res: Response) => {
             success: true,
             content: {
                 id: (req as any).identityId,
-                firstName: req.body.form.firstName,
-                name: req.body.form.name,
-                birthday: req.body.form.birthday,
-                phoneNumber: req.body.form.phoneNumber,
+                firstName: req.body.firstName,
+                name: req.body.name,
+                birthday: req.body.birthday,
+                phoneNumber: req.body.phoneNumber,
                 address: {
-                    street: req.body.form.street,
-                    postalCode: req.body.form.postalCode,
-                    city: req.body.form.city,
-                    country: req.body.form.country
+                    street: req.body.address.street,
+                    postalCode: req.body.address.postalCode,
+                    city: req.body.address.city,
+                    country: req.body.address.country
                 }
             },
             correlationId: correlationId,
