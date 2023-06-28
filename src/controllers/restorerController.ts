@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import {IdentityType} from "../enums/identityType";
 import { MessageLapinou, publishTopic, receiveResponses } from '../services/lapinouService';
 import { v4 as uuidv4 } from 'uuid';
+import mongoose, { Mongoose } from 'mongoose';
 
 
 export const getMyAccount = async (req: Request, res: Response) => {
@@ -225,11 +226,11 @@ export const createMenu = async (req: Request, res: Response) => {
             success: true,
             content: {
                 catalogId: req.params.catalogId,
-                id: uuidv4(),
+                id: new mongoose.Types.ObjectId(),
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
-                articles: [],
+                articles: req.body.articles
             },
             correlationId: correlationId,
             replyTo: replyQueue
@@ -255,7 +256,7 @@ export const createArticle = async (req: Request, res: Response) => {
             success: true,
             content: {
                 catalogId: req.params.catalogId,
-                id: uuidv4(),
+                id: new mongoose.Types.ObjectId(),
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
@@ -349,7 +350,7 @@ export const updateMenu = async (req: Request, res: Response) => {
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
-                articles: [req.body.articles]
+                articles: req.body.articles
             },
             correlationId: correlationId,
             replyTo: replyQueue
