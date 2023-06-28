@@ -59,33 +59,33 @@ export const getMyCart = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot find cart');
         }
-        const cart = responses.find(m => m.sender == 'cart')
+        const cart = responses[0]
 
         // Get Catalog
-        replyQueue = 'get.catalog';
+        replyQueue = 'get.catalog.by.restorer';
         correlationId = uuidv4();
         message = {
             success: true,
-            content: {id: cart?.content._idRestorer},
+            content: {idRestorer: cart.content._idRestorer},
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('catalogs', 'get.catalog', message);
+        await publishTopic('catalogs', 'get.catalog.by.restorer', message);
 
         responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
             throw new Error('Cannot find catalog');
         }
-        const catalog = responses.find(m => m.sender == 'catalog')
+        const catalog = responses[0]
 
-        // Replace menu IDs with catalog menus
-        const menus = cart?.content.menus.map((menuId: string) => {
-            const menu = catalog?.content.find((m: any) => m.id === menuId);
+        const menus = cart.content.menus.map((menuId: string) => {
+            const menu = catalog.content.menus.find((m: any) => m._id === menuId);
             if (menu) {
                 return {
-                    id: menu.id,
+                    id: menu._id,
                     name: menu.name,
                     description: menu.description,
+                    image: menu.image,
                     amount: menu.amount
                 };
             } else {
@@ -93,13 +93,12 @@ export const getMyCart = async (req: Request, res: Response) => {
             }
         });
 
-        // Construct the result object
         const result = {
-            name: catalog?.content.description,
+            name: catalog?.content.name,
             amount: cart?.content.price,
             menus: menus || []
         };
-
+        console.log(JSON.stringify(result))
         res.status(200).json(result);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
@@ -125,6 +124,7 @@ export const getCatalogs = async (req: Request, res: Response) => {
         const result = catalog?.content.map((item: any) => {
             return {
                 id: item._id,
+                restorerId: item.restorerId,
                 image: item.image,
                 name: item.name,
                 description: item.description
@@ -155,7 +155,6 @@ export const getMenus = async (req: Request, res: Response) => {
             throw new Error('Cannot find catalog');
         }
         const catalog = responses[0];
-        console.log(catalog?.content)
         const menus = catalog?.content.menus.map((menu: any) => {
             const amount = menu.articles.reduce((sum: number, articleId: string) => {
                 const article = catalog?.content.articles.find((a: any) => a._id === articleId);
@@ -187,6 +186,7 @@ export const getMenus = async (req: Request, res: Response) => {
 
         const result = {
             id: catalog?.content._id,
+            restorerId: catalog?.content.restorerId,
             image: catalog?.content.image,
             name: catalog?.content.name,
             description: catalog?.content.description,
@@ -248,7 +248,8 @@ export const getMenu = async (req: Request, res: Response) => {
             }
         }, 0);
         const result = {
-            id: menu.id,
+            id: menu._id,
+            restorerId: catalog?.content.restorerId,
             image: menu.image,
             name: menu.name,
             description: menu.description,
@@ -348,9 +349,9 @@ export const getMyOrders = async (req: Request, res: Response) => {
 
 export const createAccount = async (req: Request, res: Response) => {
     try {
-        const replyQueue = 'create.user.account.reply';
-        const correlationId = uuidv4();
-        const message: MessageLapinou = {
+        let replyQueue = 'create.user.account.reply';
+        let correlationId = uuidv4();
+        let message: MessageLapinou = {
             success: true,
             content: {
                 id: (req as any).identityId,
@@ -370,10 +371,15 @@ export const createAccount = async (req: Request, res: Response) => {
         };
         await publishTopic('users', 'create.user.account', message);
 
-        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        let responses = await receiveResponses(replyQueue, correlationId, 2);
         if (!responses[0].success) {
             throw new Error('Cannot create user account');
         }
+        if (!responses[1].success) {
+            throw new Error('Cannot create user cart');
+        }
+
+
         res.status(200).json({message: responses[0].content});
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
@@ -458,6 +464,7 @@ export const addToMyCart = async (req: Request, res: Response) => {
             content: {
                 id: (req as any).identityId,
                 menu: {
+                    restorerId: req.body.menu.restorerId,
                     id: req.body.menu.id,
                     amount: req.body.menu.amount
                 }
@@ -465,6 +472,7 @@ export const addToMyCart = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
+        console.log("Here" + req.body.menu.restorerId)
         await publishTopic('carts', 'add.to.cart', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
@@ -498,7 +506,7 @@ export const removeToMyCart = async (req: Request, res: Response) => {
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
-            throw new Error('Cannot add to cart');
+            throw new Error('Cannot remove to cart');
         }
         res.status(200).json({message: responses[0].content});
     } catch (err) {
