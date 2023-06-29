@@ -94,6 +94,7 @@ export const getMyCart = async (req: Request, res: Response) => {
         });
 
         const result = {
+            id: cart?.content._id,
             name: catalog?.content.name,
             amount: cart?.content.price,
             menus: menus || []
@@ -264,6 +265,30 @@ export const getMenu = async (req: Request, res: Response) => {
     }
 };
 
+// Définir les types
+type MappedMenu = {
+    id: string;
+    name: string;
+    image: string;
+};
+
+type MappedOrder = {
+    status: string;
+    date: string;
+    amount: string;
+    restorer: {
+        id: string;
+        name: string;
+        address: string;
+    };
+    user: {
+        id: string;
+        name: string;
+        address: string;
+    };
+    menus: MappedMenu[];
+};
+
 export const getMyOrders = async (req: Request, res: Response) => {
     try {
         const replyQueue = 'get.orders.for.user.reply';
@@ -306,58 +331,60 @@ export const getMyOrders = async (req: Request, res: Response) => {
 
         // MAPPING DATAS
 
+
+        // MAPPING DATAS
         const ordersData = orders.content;
-        const restorerId = ordersData[0]._idRestorer;
-        const userId = ordersData[0]._idUser;
 
-        // Map order details
-        const order = ordersData[0];
-        const result = {
-            status: order.status,
-            date: order.date,
-            amount: order.amount,
-            restorer: {
-                id: '',
-                name: '',
-                address: ''
-            },
-            user: {
-                id: '',
-                name: '',
-                address: ''
-            },
-            menus: [{
-                id: '',
-                name: '',
-                image: ''
-            }]
-        };
+        const ordersResult: MappedOrder[] = [];
 
-        // Map restorer details
-        const restorer = accounts?.content.restorer;
-        result.restorer.id = restorer.id;
-        result.restorer.name = restorer.name;
-        result.restorer.address = `${restorer.address.street}, ${restorer.address.postalCode} ${restorer.address.city}, ${restorer.address.country}`;
+        for (const order of ordersData) {
+            const restorerId = order._idRestorer;
 
-        // Map user details
-        const user = accounts?.content.user;
-        result.user.id = user.id;
-        result.user.name = `${user.firstName} ${user.name}`;
-        result.user.address = `${user.address.street}, ${user.address.postalCode} ${user.address.city}, ${user.address.country}`;
-
-// Map menus
-        const catalog = catalogs?.content.find((c: any) => c.restorerId === restorerId);
-        const menus = catalog?.menus;
-        for (const menu of menus) {
-            const mappedMenu: { id: string, name: string, image: string } = {
-                id: menu._id,
-                name: menu.name,
-                image: menu.image,
+            const mappedOrder: MappedOrder = {
+                status: order.status,
+                date: order.date,
+                amount: order.amount,
+                restorer: {
+                    id: '',
+                    name: '',
+                    address: '',
+                },
+                user: {
+                    id: '',
+                    name: '',
+                    address: '',
+                },
+                menus: [],
             };
-            result.menus.push(mappedMenu);
+
+            // Map restorer details
+            const restorer = accounts?.content.restorer;
+            mappedOrder.restorer.id = restorer.id;
+            mappedOrder.restorer.name = restorer.name;
+            mappedOrder.restorer.address = `${restorer.address.street}, ${restorer.address.postalCode} ${restorer.address.city}, ${restorer.address.country}`;
+
+            // Map user details
+            const user = accounts?.content.user;
+            mappedOrder.user.id = user.id;
+            mappedOrder.user.name = `${user.firstName} ${user.name}`;
+            mappedOrder.user.address = `${user.address.street}, ${user.address.postalCode} ${user.address.city}, ${user.address.country}`;
+
+            // Map menus
+            const catalog = catalogs?.content.find((c: any) => c.restorerId === restorerId);
+            const menus = catalog?.menus;
+            for (const menu of menus) {
+                const mappedMenu: { id: string, name: string, image: string } = {
+                    id: menu._id,
+                    name: menu.name,
+                    image: menu.image,
+                };
+                mappedOrder.menus.push(mappedMenu);
+            }
+
+            ordersResult.push(mappedOrder);
         }
 
-        res.status(200).json(result);
+        res.status(200).json(ordersResult);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
@@ -427,7 +454,7 @@ export const submitCart = async (req: Request, res: Response) => {
             .filter((response) => !response.success)
             .map((response) => response.content);
         if (failedResponseContents.length > 0) {
-            return res.status(400).json({errors: failedResponseContents});
+            throw new Error('Cannot submit cart');
         }
 
         res.status(200).json({message: 'Cart submitted, payment successful'});
@@ -489,7 +516,6 @@ export const addToMyCart = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        console.log("Here" + req.body.menu.restorerId)
         await publishTopic('carts', 'add.to.cart', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
@@ -525,6 +551,7 @@ export const removeToMyCart = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot remove to cart');
         }
+
         res.status(200).json({message: responses[0].content});
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
