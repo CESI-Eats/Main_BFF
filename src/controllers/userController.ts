@@ -275,16 +275,13 @@ export const getMyOrders = async (req: Request, res: Response) => {
             replyTo: replyQueue
         };
 
-        await publishTopic('orders', 'get.orders.for.user', message);
+        await publishTopic('historic', 'get.orders.for.user', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
-        const failedResponseContents = responses
-            .filter((response) => !response.success)
-            .map((response) => response.content);
-        if (failedResponseContents.length > 0) {
-            throw new Error(failedResponseContents[0]);
+        if (!responses[0].success) {
+            throw new Error('Cannot find user account');
         }
-        const orders = responses.find(m => m.sender == 'order');
+        const orders = responses[0];
 
         // Get user and restorer infos as well as catalog using a single topic
         const accountAndCatalogReplyQueue = 'get.users.restorers.and.catalogs';
@@ -298,54 +295,74 @@ export const getMyOrders = async (req: Request, res: Response) => {
             correlationId: accountAndCatalogCorrelationId,
             replyTo: accountAndCatalogReplyQueue
         };
-        await publishTopic('orders', 'get.users.restorers.and.catalogs', accountAndCatalogMessage);
+        await publishTopic('historic', 'get.users.restorers.and.catalogs', accountAndCatalogMessage);
         const accountAndCatalogResponses = await receiveResponses(accountAndCatalogReplyQueue, accountAndCatalogCorrelationId, 2);
         const accounts = accountAndCatalogResponses.find(m => m.sender == 'account');
         const catalogs = accountAndCatalogResponses.find(m => m.sender == 'catalog');
-        // Transform order?.content._idMenus which contains a list of ids into the format wanted
-        const menus = orders?.content.map((order: any) => {
-            const orderMenus = order._idMenus.map((menuId: string) => {
-                const catalog = catalogs?.content.find((c: any) => c.restorerId === order._idRestorer);
-                if (catalog) {
-                    const menu = catalog.menus.find((m: any) => m.id === menuId);
-                    if (menu) {
-                        return {
-                            id: menu.id,
-                            image: menu.image,
-                            name: menu.name
-                        };
-                    } else {
-                        throw new Error(`Menu with ID ${menuId} not found in the catalog`);
-                    }
-                } else {
-                    throw new Error(`Catalog not found for restorer with ID ${order._idRestorer}`);
-                }
-            });
-            return {
-                status: order.status,
-                date: order.date,
-                amount: order.amount,
-                restorer: {
-                    id: accounts?.content.restorers.find((r: any) => r.id === order._idRestorer)?.id,
-                    name: accounts?.content.restorers.find((r: any) => r.id === order._idRestorer)?.name,
-                    address: accounts?.content.restorers.find((r: any) => r.id === order._idRestorer)?.address
-                },
-                user: {
-                    id: accounts?.content.users.find((u: any) => u.id === order._idUser)?.id,
-                    name: accounts?.content.users.find((u: any) => u.id === order._idUser)?.name,
-                    address: accounts?.content.users.find((u: any) => u.id === order._idUser)?.address
-                },
-                menus: orderMenus || []
-            };
-        });
 
-        res.status(200).json(menus);
+        console.log("***Orders " + JSON.stringify(orders));
+        console.log("***Accounts " + JSON.stringify(accounts));
+        console.log("***Catalogs " + JSON.stringify(catalogs));
+
+        // MAPPING DATAS
+
+        const ordersData = orders.content;
+        const restorerId = ordersData[0]._idRestorer;
+        const userId = ordersData[0]._idUser;
+
+        // Map order details
+        const order = ordersData[0];
+        const result = {
+            status: order.status,
+            date: order.date,
+            amount: order.amount,
+            restorer: {
+                id: '',
+                name: '',
+                address: ''
+            },
+            user: {
+                id: '',
+                name: '',
+                address: ''
+            },
+            menus: [{
+                id: '',
+                name: '',
+                image: ''
+            }]
+        };
+
+        // Map restorer details
+        const restorer = accounts?.content.restorer;
+        result.restorer.id = restorer.id;
+        result.restorer.name = restorer.name;
+        result.restorer.address = `${restorer.address.street}, ${restorer.address.postalCode} ${restorer.address.city}, ${restorer.address.country}`;
+
+        // Map user details
+        const user = accounts?.content.user;
+        result.user.id = user.id;
+        result.user.name = `${user.firstName} ${user.name}`;
+        result.user.address = `${user.address.street}, ${user.address.postalCode} ${user.address.city}, ${user.address.country}`;
+
+// Map menus
+        const catalog = catalogs?.content.find((c: any) => c.restorerId === restorerId);
+        const menus = catalog?.menus;
+        for (const menu of menus) {
+            const mappedMenu: { id: string, name: string, image: string } = {
+                id: menu._id,
+                name: menu.name,
+                image: menu.image,
+            };
+            result.menus.push(mappedMenu);
+        }
+
+        res.status(200).json(result);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
     }
 };
-
 
 export const createAccount = async (req: Request, res: Response) => {
     try {
