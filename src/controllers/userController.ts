@@ -94,6 +94,7 @@ export const getMyCart = async (req: Request, res: Response) => {
         });
 
         const result = {
+            id: cart?.content._id,
             name: catalog?.content.name,
             amount: cart?.content.price,
             menus: menus || []
@@ -264,6 +265,30 @@ export const getMenu = async (req: Request, res: Response) => {
     }
 };
 
+// Définir les types
+type MappedMenu = {
+    id: string;
+    name: string;
+    image: string;
+};
+
+type MappedOrder = {
+    status: string;
+    date: string;
+    amount: string;
+    restorer: {
+        id: string;
+        name: string;
+        address: string;
+    };
+    user: {
+        id: string;
+        name: string;
+        address: string;
+    };
+    menus: MappedMenu[];
+};
+
 export const getMyOrders = async (req: Request, res: Response) => {
     try {
         const replyQueue = 'get.orders.for.user.reply';
@@ -275,16 +300,13 @@ export const getMyOrders = async (req: Request, res: Response) => {
             replyTo: replyQueue
         };
 
-        await publishTopic('orders', 'get.orders.for.user', message);
+        await publishTopic('historic', 'get.orders.for.user', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
-        const failedResponseContents = responses
-            .filter((response) => !response.success)
-            .map((response) => response.content);
-        if (failedResponseContents.length > 0) {
-            throw new Error(failedResponseContents[0]);
+        if (!responses[0].success) {
+            throw new Error('Cannot find user account');
         }
-        const orders = responses.find(m => m.sender == 'order');
+        const orders = responses[0];
 
         // Get user and restorer infos as well as catalog using a single topic
         const accountAndCatalogReplyQueue = 'get.users.restorers.and.catalogs';
@@ -298,54 +320,76 @@ export const getMyOrders = async (req: Request, res: Response) => {
             correlationId: accountAndCatalogCorrelationId,
             replyTo: accountAndCatalogReplyQueue
         };
-        await publishTopic('orders', 'get.users.restorers.and.catalogs', accountAndCatalogMessage);
+        await publishTopic('historic', 'get.users.restorers.and.catalogs', accountAndCatalogMessage);
         const accountAndCatalogResponses = await receiveResponses(accountAndCatalogReplyQueue, accountAndCatalogCorrelationId, 2);
         const accounts = accountAndCatalogResponses.find(m => m.sender == 'account');
         const catalogs = accountAndCatalogResponses.find(m => m.sender == 'catalog');
-        // Transform order?.content._idMenus which contains a list of ids into the format wanted
-        const menus = orders?.content.map((order: any) => {
-            const orderMenus = order._idMenus.map((menuId: string) => {
-                const catalog = catalogs?.content.find((c: any) => c.restorerId === order._idRestorer);
-                if (catalog) {
-                    const menu = catalog.menus.find((m: any) => m.id === menuId);
-                    if (menu) {
-                        return {
-                            id: menu.id,
-                            image: menu.image,
-                            name: menu.name
-                        };
-                    } else {
-                        throw new Error(`Menu with ID ${menuId} not found in the catalog`);
-                    }
-                } else {
-                    throw new Error(`Catalog not found for restorer with ID ${order._idRestorer}`);
-                }
-            });
-            return {
+
+        console.log("***Orders " + JSON.stringify(orders));
+        console.log("***Accounts " + JSON.stringify(accounts));
+        console.log("***Catalogs " + JSON.stringify(catalogs));
+
+        // MAPPING DATAS
+
+
+        // MAPPING DATAS
+        const ordersData = orders.content;
+
+        const ordersResult: MappedOrder[] = [];
+
+        for (const order of ordersData) {
+            const restorerId = order._idRestorer;
+
+            const mappedOrder: MappedOrder = {
                 status: order.status,
                 date: order.date,
                 amount: order.amount,
                 restorer: {
-                    id: accounts?.content.restorers.find((r: any) => r.id === order._idRestorer)?.id,
-                    name: accounts?.content.restorers.find((r: any) => r.id === order._idRestorer)?.name,
-                    address: accounts?.content.restorers.find((r: any) => r.id === order._idRestorer)?.address
+                    id: '',
+                    name: '',
+                    address: '',
                 },
                 user: {
-                    id: accounts?.content.users.find((u: any) => u.id === order._idUser)?.id,
-                    name: accounts?.content.users.find((u: any) => u.id === order._idUser)?.name,
-                    address: accounts?.content.users.find((u: any) => u.id === order._idUser)?.address
+                    id: '',
+                    name: '',
+                    address: '',
                 },
-                menus: orderMenus || []
+                menus: [],
             };
-        });
 
-        res.status(200).json(menus);
+            // Map restorer details
+            const restorer = accounts?.content.restorer;
+            mappedOrder.restorer.id = restorer.id;
+            mappedOrder.restorer.name = restorer.name;
+            mappedOrder.restorer.address = `${restorer.address.street}, ${restorer.address.postalCode} ${restorer.address.city}, ${restorer.address.country}`;
+
+            // Map user details
+            const user = accounts?.content.user;
+            mappedOrder.user.id = user.id;
+            mappedOrder.user.name = `${user.firstName} ${user.name}`;
+            mappedOrder.user.address = `${user.address.street}, ${user.address.postalCode} ${user.address.city}, ${user.address.country}`;
+
+            // Map menus
+            const catalog = catalogs?.content.find((c: any) => c.restorerId === restorerId);
+            const menus = catalog?.menus;
+            for (const menu of menus) {
+                const mappedMenu: { id: string, name: string, image: string } = {
+                    id: menu._id,
+                    name: menu.name,
+                    image: menu.image,
+                };
+                mappedOrder.menus.push(mappedMenu);
+            }
+
+            ordersResult.push(mappedOrder);
+        }
+
+        res.status(200).json(ordersResult);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
     }
 };
-
 
 export const createAccount = async (req: Request, res: Response) => {
     try {
@@ -410,7 +454,7 @@ export const submitCart = async (req: Request, res: Response) => {
             .filter((response) => !response.success)
             .map((response) => response.content);
         if (failedResponseContents.length > 0) {
-            return res.status(400).json({errors: failedResponseContents});
+            throw new Error('Cannot submit cart');
         }
 
         res.status(200).json({message: 'Cart submitted, payment successful'});
@@ -472,7 +516,6 @@ export const addToMyCart = async (req: Request, res: Response) => {
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        console.log("Here" + req.body.menu.restorerId)
         await publishTopic('carts', 'add.to.cart', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
@@ -508,6 +551,7 @@ export const removeToMyCart = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot remove to cart');
         }
+
         res.status(200).json({message: responses[0].content});
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
