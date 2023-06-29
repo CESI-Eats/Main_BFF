@@ -50,6 +50,7 @@ export const getMyAccount = async (req: Request, res: Response) => {
                 birthday: accountResponse?.content.birthday,
                 phoneNumber: accountResponse?.content.phoneNumber,
                 kitty: accountResponse?.content.kitty,
+                available: accountResponse?.content.available,
                 address: {
                     street: accountResponse?.content.address.street,
                     postalCode: accountResponse?.content.address.postalCode,
@@ -112,6 +113,7 @@ export const updateMyAccount = async (req: Request, res: Response) => {
                 name: req.body.name,
                 birthday: req.body.birthday,
                 phoneNumber: req.body.phoneNumber,
+                available: req.body.available,
                 address: {
                     street: req.body.address.street,
                     postalCode: req.body.address.postalCode,
