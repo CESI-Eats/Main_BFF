@@ -1,9 +1,6 @@
 import { Request, Response } from 'express';
-import {IdentityType} from "../enums/identityType";
 import { MessageLapinou, publishTopic, receiveResponses } from '../services/lapinouService';
 import { v4 as uuidv4 } from 'uuid';
-import mongoose, { Mongoose } from 'mongoose';
-
 
 export const getMyAccount = async (req: Request, res: Response) => {
     try {
@@ -226,7 +223,6 @@ export const createMenu = async (req: Request, res: Response) => {
             success: true,
             content: {
                 catalogId: req.params.catalogId,
-                id: new mongoose.Types.ObjectId(),
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
@@ -256,7 +252,6 @@ export const createArticle = async (req: Request, res: Response) => {
             success: true,
             content: {
                 catalogId: req.params.catalogId,
-                id: new mongoose.Types.ObjectId(),
                 name: req.body.name,
                 description: req.body.description,
                 image: req.body.image,
