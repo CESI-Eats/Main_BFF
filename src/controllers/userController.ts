@@ -99,7 +99,6 @@ export const getMyCart = async (req: Request, res: Response) => {
             amount: cart?.content.price,
             menus: menus || []
         };
-        console.log(JSON.stringify(result))
         res.status(200).json(result);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
@@ -273,6 +272,7 @@ type MappedMenu = {
 };
 
 type MappedOrder = {
+    id: string;
     status: string;
     date: string;
     amount: string;
@@ -325,13 +325,6 @@ export const getMyOrders = async (req: Request, res: Response) => {
         const accounts = accountAndCatalogResponses.find(m => m.sender == 'account');
         const catalogs = accountAndCatalogResponses.find(m => m.sender == 'catalog');
 
-        console.log("***Orders " + JSON.stringify(orders));
-        console.log("***Accounts " + JSON.stringify(accounts));
-        console.log("***Catalogs " + JSON.stringify(catalogs));
-
-        // MAPPING DATAS
-
-
         // MAPPING DATAS
         const ordersData = orders.content;
 
@@ -341,6 +334,7 @@ export const getMyOrders = async (req: Request, res: Response) => {
             const restorerId = order._idRestorer;
 
             const mappedOrder: MappedOrder = {
+                id: order._id,
                 status: order.status,
                 date: order.date,
                 amount: order.amount,
@@ -372,15 +366,17 @@ export const getMyOrders = async (req: Request, res: Response) => {
             // Map menus
             const catalog = catalogs?.content.find((c: any) => c.restorerId === restorerId);
             const menus = catalog?.menus;
-            for (const menu of menus) {
-                const mappedMenu: { id: string, name: string, image: string } = {
-                    id: menu._id,
-                    name: menu.name,
-                    image: menu.image,
-                };
-                mappedOrder.menus.push(mappedMenu);
+            for (const menuId of order._idMenus) {
+                const menu = menus?.find((m: any) => m._id === menuId);
+                if (menu) {
+                    const mappedMenu: { id: string; name: string; image: string } = {
+                        id: menu._id,
+                        name: menu.name,
+                        image: menu.image,
+                    };
+                    mappedOrder.menus.push(mappedMenu);
+                }
             }
-
             ordersResult.push(mappedOrder);
         }
 

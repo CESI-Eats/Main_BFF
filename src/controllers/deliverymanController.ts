@@ -160,6 +160,31 @@ export const deleteMyAccount = async (req: Request, res: Response) => {
     }
 };
 
+// Définir les types
+type MappedMenu = {
+    id: string;
+    name: string;
+    image: string;
+};
+
+type MappedOrder = {
+    id: string;
+    status: string;
+    date: string;
+    amount: string;
+    restorer: {
+        id: string;
+        name: string;
+        address: string;
+    };
+    user: {
+        id: string;
+        name: string;
+        address: string;
+    };
+    menus: MappedMenu[];
+};
+
 export const getMyOrders = async (req: Request, res: Response) => {
     try {
         const result: OrderItem[] = [];
@@ -181,85 +206,80 @@ export const getMyOrders = async (req: Request, res: Response) => {
         if (failedResponseContents.length > 0) {
             throw new Error(failedResponseContents[0]);
         }
-        const ordersResponse = responses.find(m => m.sender == 'order')
+        const orders = responses[0];
 
-        // For each order in historic
-        for (let orderString in ordersResponse?.content) {
-            const order = JSON.parse(orderString);
+        const accountAndCatalogReplyQueue = 'get.users.restorers.and.catalogs';
+        const accountAndCatalogCorrelationId = uuidv4();
+        const accountAndCatalogMessage: MessageLapinou = {
+            success: true,
+            content: {
+                userIds: orders?.content.map((order: any) => order._idUser),
+                restorerIds: orders?.content.map((order: any) => order._idRestorer)
+            },
+            correlationId: accountAndCatalogCorrelationId,
+            replyTo: accountAndCatalogReplyQueue
+        };
+        await publishTopic('historic', 'get.users.restorers.and.catalogs', accountAndCatalogMessage);
+        const accountAndCatalogResponses = await receiveResponses(accountAndCatalogReplyQueue, accountAndCatalogCorrelationId, 2);
+        const accounts = accountAndCatalogResponses.find(m => m.sender == 'account');
+        const catalogs = accountAndCatalogResponses.find(m => m.sender == 'catalog');
 
-            // Get Account
-            replyQueue = 'get.accounts.for.deliveryman.reply';
-            correlationId = uuidv4();
-            message = {
-                success: true,
-                content: {
-                    restorerId: order._idRestorer,
-                    userId: order._idUser
-                },
-                correlationId: correlationId,
-                replyTo: replyQueue
-            };
-            await publishTopic('historic', 'get.accounts.for.deliveryman', message);
-            responses = await receiveResponses(replyQueue, correlationId, 1);
-            failedResponseContents = responses
-                .filter((response) => !response.success)
-                .map((response) => response.content);
-            if (failedResponseContents.length > 0) {
-                throw new Error(failedResponseContents[0]);
-            }
-            const accountsResponse = responses.find(m => m.sender == 'account')
+        // MAPPING DATAS
+        const ordersData = orders.content;
 
-            // Get menus
-            replyQueue = 'get.menus.for.deliveryman.reply';
-            correlationId = uuidv4();
-            message = {
-                success: true,
-                content: {
-                    restorerId: order._idRestorer
-                },
-                correlationId: correlationId,
-                replyTo: replyQueue
-            };
-            await publishTopic('historic', 'get.menus.for.deliveryman', message);
-            responses = await receiveResponses(replyQueue, correlationId, 1);
-            failedResponseContents = responses
-                .filter((response) => !response.success)
-                .map((response) => response.content);
-            if (failedResponseContents.length > 0) {
-                throw new Error(failedResponseContents[0]);
-            }
-            const catalogResponse = responses.find(m => m.sender == 'catalog')
+        const ordersResult: MappedOrder[] = [];
 
-            // Parse the order
-            let newOrder: OrderItem = {
-                id: order.id,
+        for (const order of ordersData) {
+            const restorerId = order._idRestorer;
+
+            const mappedOrder: MappedOrder = {
+                id: order._id,
                 status: order.status,
                 date: order.date,
+                amount: order.amount,
                 restorer: {
-                    id: accountsResponse?.content.restorer.id,
-                    name: accountsResponse?.content.restorer.name,
-                    address: accountsResponse?.content.restorer.address.street + ' ' + accountsResponse?.content.restorer.address.city,
+                    id: '',
+                    name: '',
+                    address: '',
                 },
                 user: {
-                    id: accountsResponse?.content.user.id,
-                    name: accountsResponse?.content.user.name,
-                    address: accountsResponse?.content.user.address.street + ' ' + accountsResponse?.content.user.address.city,
+                    id: '',
+                    name: '',
+                    address: '',
                 },
-                menus: []
-            }
-            for (const idMenu in order._idMenus) {
-                const menuId = order._idMenus[idMenu];
-                const menu = catalogResponse?.content.find((m: { id: string }) => m.id === menuId);
-                const newMenu = {
-                    id: menu.id,
-                    image: menu.image,
-                    name: menu.name
+                menus: [],
+            };
+
+            // Map restorer details
+            const restorer = accounts?.content.restorer;
+            mappedOrder.restorer.id = restorer.id;
+            mappedOrder.restorer.name = restorer.name;
+            mappedOrder.restorer.address = `${restorer.address.street}, ${restorer.address.postalCode} ${restorer.address.city}, ${restorer.address.country}`;
+
+            // Map user details
+            const user = accounts?.content.user;
+            mappedOrder.user.id = user.id;
+            mappedOrder.user.name = `${user.firstName} ${user.name}`;
+            mappedOrder.user.address = `${user.address.street}, ${user.address.postalCode} ${user.address.city}, ${user.address.country}`;
+
+            // Map menus
+            const catalog = catalogs?.content.find((c: any) => c.restorerId === restorerId);
+            const menus = catalog?.menus;
+            for (const menuId of order._idMenus) {
+                const menu = menus?.find((m: any) => m._id === menuId);
+                if (menu) {
+                    const mappedMenu: { id: string; name: string; image: string } = {
+                        id: menu._id,
+                        name: menu.name,
+                        image: menu.image,
+                    };
+                    mappedOrder.menus.push(mappedMenu);
                 }
-                newOrder.menus.push(newMenu)
             }
-            result.push(newOrder);
+            ordersResult.push(mappedOrder);
         }
-        res.status(200).json(result);
+
+        res.status(200).json(ordersResult);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
@@ -267,7 +287,7 @@ export const getMyOrders = async (req: Request, res: Response) => {
 };
 
 export const collectKitty = async (req: Request, res: Response) => {
-    if (!req.body.amount || !req.body.mode) {
+    if (req.body.amount == null || !req.body.mode) {
         return res.status(400).json({message: 'Missing parameters amount or mode'});
     }
     try {
