@@ -113,6 +113,7 @@ export const updateMyAccount = async (req: Request, res: Response) => {
                 name: req.body.name,
                 birthday: req.body.birthday,
                 phoneNumber: req.body.phoneNumber,
+                available: req.body.available,
                 address: {
                     street: req.body.address.street,
                     postalCode: req.body.address.postalCode,
