@@ -13,4 +13,4 @@ jobs:
   
   deploy:
     needs: build
-    uses: CESI-Eats/MainBFF_DEPLOY/.github/workflows/deploy.yaml@master
+    uses: CESI-Eats/MainBFF_DEPLOY/.github/workflows/deploy.yaml@main
