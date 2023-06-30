@@ -18,7 +18,7 @@ export const getMyAccount = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot find account');
         }
-        res.status(200).json({message: responses[0].content});
+        res.status(200).json(responses[0].content);
     }
     catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
@@ -76,6 +76,8 @@ export const updateMyAccount = async (req: Request, res: Response) => {
                 id: (req as any).identityId,
                 name: req.body.name,
                 phoneNumber: req.body.phoneNumber,
+                image: req.body.image,
+                description: req.body.description,
                 address: {
                     street: req.body.address.street,
                     postalCode: req.body.address.postalCode,
@@ -128,21 +130,21 @@ export const deleteMyAccount = async (req: Request, res: Response) => {
 
 export const getMyCatalog = async (req: Request, res: Response) => {
     try {
-        const replyQueue = 'get.restorer.catalog.reply';
+        const replyQueue = 'get.restorer.mycatalog.reply';
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
-            content: {id: req.params.id},
+            content: {id: (req as any).identityId},
             correlationId: correlationId,
             replyTo: replyQueue
         };
-        await publishTopic('catalog', 'get.restorer.catalog', message);
+        await publishTopic('restorers', 'get.restorer.mycatalog', message);
 
         const responses = await receiveResponses(replyQueue, correlationId, 1);
         if (!responses[0].success) {
             throw new Error('Cannot find catalog');
         }
-        res.status(200).json({message: responses[0].content});
+        res.status(200).json(responses[0].content);
 
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
@@ -166,7 +168,7 @@ export const getMenus = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot find menus');
         }
-        res.status(200).json({message: responses[0].content});
+        res.status(200).json(responses[0].content);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
@@ -190,22 +192,136 @@ export const getArticles = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot find articles');
         }
-        res.status(200).json({message: responses[0].content});
+        res.status(200).json(responses[0].content);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
     }
 };
 
+// Définir les types
+type MappedMenu = {
+    id: string;
+    name: string;
+    image: string;
+};
+
+type MappedOrder = {
+    id: string;
+    status: string;
+    date: string;
+    amount: string;
+    restorer: {
+        id: string;
+        name: string;
+        address: string;
+    };
+    user: {
+        id: string;
+        name: string;
+        address: string;
+    };
+    menus: MappedMenu[];
+};
+
 export const getAllMyOrders = async (req: Request, res: Response) => {
     try {
-        const catalogId = req.params.catalogId;
-        const id = req.params.id;
-        //
+        const replyQueue = 'get.orders.for.restorer.reply';
+        const correlationId = uuidv4();
+        const message: MessageLapinou = {
+            success: true,
+            content: {id: (req as any).identityId},
+            correlationId: correlationId,
+            replyTo: replyQueue
+        };
+
+        await publishTopic('historic', 'get.orders.for.restorer', message);
+
+        const responses = await receiveResponses(replyQueue, correlationId, 1);
+        if (!responses[0].success) {
+            throw new Error('Cannot find user account');
+        }
+        const orders = responses[0];
+
+        // Get user and restorer infos as well as catalog using a single topic
+        const accountAndCatalogReplyQueue = 'get.users.restorers.and.catalogs';
+        const accountAndCatalogCorrelationId = uuidv4();
+        const accountAndCatalogMessage: MessageLapinou = {
+            success: true,
+            content: {
+                userIds: orders?.content.map((order: any) => order._idUser),
+                restorerIds: orders?.content.map((order: any) => order._idRestorer)
+            },
+            correlationId: accountAndCatalogCorrelationId,
+            replyTo: accountAndCatalogReplyQueue
+        };
+        await publishTopic('historic', 'get.users.restorers.and.catalogs', accountAndCatalogMessage);
+        const accountAndCatalogResponses = await receiveResponses(accountAndCatalogReplyQueue, accountAndCatalogCorrelationId, 2);
+        const accounts = accountAndCatalogResponses.find(m => m.sender == 'account');
+        const catalogs = accountAndCatalogResponses.find(m => m.sender == 'catalog');
+
+        // MAPPING DATAS
+        const ordersData = orders.content;
+
+        const ordersResult: MappedOrder[] = [];
+
+        for (const order of ordersData) {
+            const restorerId = order._idRestorer;
+
+            const mappedOrder: MappedOrder = {
+                id: order._id,
+                status: order.status,
+                date: order.date,
+                amount: order.amount,
+                restorer: {
+                    id: '',
+                    name: '',
+                    address: '',
+                },
+                user: {
+                    id: '',
+                    name: '',
+                    address: '',
+                },
+                menus: [],
+            };
+
+            // Map restorer details
+            const restorer = accounts?.content.restorer;
+            mappedOrder.restorer.id = restorer.id;
+            mappedOrder.restorer.name = restorer.name;
+            mappedOrder.restorer.address = `${restorer.address.street}, ${restorer.address.postalCode} ${restorer.address.city}, ${restorer.address.country}`;
+
+            // Map user details
+            const user = accounts?.content.user;
+            mappedOrder.user.id = user.id;
+            mappedOrder.user.name = `${user.firstName} ${user.name}`;
+            mappedOrder.user.address = `${user.address.street}, ${user.address.postalCode} ${user.address.city}, ${user.address.country}`;
+
+            // Map menus
+            const catalog = catalogs?.content.find((c: any) => c.restorerId === restorerId);
+            const menus = catalog?.menus;
+            for (const menuId of order._idMenus) {
+                const menu = menus?.find((m: any) => m._id === menuId);
+                if (menu) {
+                    const mappedMenu: { id: string; name: string; image: string } = {
+                        id: menu._id,
+                        name: menu.name,
+                        image: menu.image,
+                    };
+                    mappedOrder.menus.push(mappedMenu);
+                }
+            }
+            ordersResult.push(mappedOrder);
+        }
+
+        res.status(200).json(ordersResult);
     } catch (err) {
-        //
+        const errMessage = err instanceof Error ? err.message : 'An error occurred';
+        res.status(500).json({message: errMessage});
     }
 };
+
 
 export const getMyOrders = async (req: Request, res: Response) => {
     try {
@@ -237,7 +353,7 @@ export const createMenu = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot create menu');
         }
-        res.status(200).json({message: responses[0].content});    
+        res.status(200).json(responses[0].content);    
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
@@ -266,7 +382,7 @@ export const createArticle = async (req: Request, res: Response) => {
         if (!responses[0].success) {
             throw new Error('Cannot create article');
         }
-        res.status(200).json({message: responses[0].content});    
+        res.status(200).json(responses[0].content);    
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
         res.status(500).json({message: errMessage});
