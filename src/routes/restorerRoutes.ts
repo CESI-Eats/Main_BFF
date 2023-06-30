@@ -10,8 +10,7 @@ router.get('/myaccount', authorize([IdentityType.RESTORER]),restorerController.g
 router.get('/mycatalog', authorize([IdentityType.RESTORER]),restorerController.getMyCatalog);
 router.get('/:catalogId/menus/:id', restorerController.getMenus);
 router.get('/:catalogId/articles/:id', restorerController.getArticles);
-router.get('/myorders', restorerController.getAllMyOrders);
-router.get('/orders/:id', restorerController.getMyOrders);
+router.get('/myorders', restorerController.getMyOrders);
 
 // Post
 router.post('/accounts', authorize([IdentityType.RESTORER]), restorerController.createAccount);
