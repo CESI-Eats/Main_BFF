@@ -390,7 +390,7 @@ export const createArticle = async (req: Request, res: Response) => {
 };
 
 export const collectKitty = async (req: Request, res: Response) => {
-    if (!req.body.amount || !req.body.mode) {
+    if (!req.body.mode) {
         return res.status(400).json({message: 'Missing parameters amount or mode'});
     }
     try {
@@ -398,7 +398,7 @@ export const collectKitty = async (req: Request, res: Response) => {
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
-            content: {id: (req as any).identityId, amount: req.body.amount, mode: req.body.mode},
+            content: {id: (req as any).identityId, mode: req.body.mode},
             correlationId: correlationId,
             replyTo: replyQueue
         };
