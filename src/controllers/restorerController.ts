@@ -224,26 +224,50 @@ type MappedOrder = {
     menus: MappedMenu[];
 };
 
-export const getAllMyOrders = async (req: Request, res: Response) => {
+type OrderItem = {
+    id: string;
+    status: string;
+    date: string;
+    restorer: {
+        id: string;
+        name: string;
+        address: string;
+    };
+    user: {
+        id: string;
+        name: string;
+        address: string;
+    };
+    menus: {
+        id: string;
+        image: string;
+        name: string;
+    }[];
+};
+
+export const getMyOrders = async (req: Request, res: Response) => {
     try {
-        const replyQueue = 'get.orders.for.restorer.reply';
-        const correlationId = uuidv4();
-        const message: MessageLapinou = {
+        const result: OrderItem[] = [];
+
+        // Get historic
+        let replyQueue = 'get.orders.for.restorer.reply';
+        let correlationId = uuidv4();
+        let message: MessageLapinou = {
             success: true,
             content: {id: (req as any).identityId},
             correlationId: correlationId,
             replyTo: replyQueue
         };
-
         await publishTopic('historic', 'get.orders.for.restorer', message);
-
-        const responses = await receiveResponses(replyQueue, correlationId, 1);
-        if (!responses[0].success) {
-            throw new Error('Cannot find user account');
+        let responses = await receiveResponses(replyQueue, correlationId, 1);
+        let failedResponseContents = responses
+            .filter((response) => !response.success)
+            .map((response) => response.content);
+        if (failedResponseContents.length > 0) {
+            throw new Error(failedResponseContents[0]);
         }
         const orders = responses[0];
 
-        // Get user and restorer infos as well as catalog using a single topic
         const accountAndCatalogReplyQueue = 'get.users.restorers.and.catalogs';
         const accountAndCatalogCorrelationId = uuidv4();
         const accountAndCatalogMessage: MessageLapinou = {
@@ -322,15 +346,6 @@ export const getAllMyOrders = async (req: Request, res: Response) => {
     }
 };
 
-
-export const getMyOrders = async (req: Request, res: Response) => {
-    try {
-        //
-    } catch (err) {
-        //
-    }
-};
-
 export const createMenu = async (req: Request, res: Response) => {
     try {
         const replyQueue = 'create.restorer.menu.reply';
@@ -391,7 +406,7 @@ export const createArticle = async (req: Request, res: Response) => {
 
 export const collectKitty = async (req: Request, res: Response) => {
     if (!req.body.mode) {
-        return res.status(400).json({message: 'Missing parameters mode'});
+        return res.status(400).json({message: 'Missing parameters amount or mode'});
     }
     try {
         const replyQueue = 'collect.restorer.kitty.reply';
