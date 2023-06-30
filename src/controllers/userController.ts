@@ -60,45 +60,57 @@ export const getMyCart = async (req: Request, res: Response) => {
             throw new Error('Cannot find cart');
         }
         const cart = responses[0]
-
-        // Get Catalog
-        replyQueue = 'get.catalog.by.restorer';
-        correlationId = uuidv4();
-        message = {
-            success: true,
-            content: {idRestorer: cart.content._idRestorer},
-            correlationId: correlationId,
-            replyTo: replyQueue
-        };
-        await publishTopic('catalogs', 'get.catalog.by.restorer', message);
-
-        responses = await receiveResponses(replyQueue, correlationId, 1);
-        if (!responses[0].success) {
-            throw new Error('Cannot find catalog');
-        }
-        const catalog = responses[0]
-
-        const menus = cart.content.menus.map((menuId: string) => {
-            const menu = catalog.content.menus.find((m: any) => m._id === menuId);
-            if (menu) {
-                return {
-                    id: menu._id,
-                    name: menu.name,
-                    description: menu.description,
-                    image: menu.image,
-                    amount: menu.amount
-                };
-            } else {
-                throw new Error(`Menu with ID ${menuId} not found in the catalog`);
-            }
-        });
-
-        const result = {
+        let result = {
             id: cart?.content._id,
-            name: catalog?.content.name,
+            name: '',
             amount: cart?.content.price,
-            menus: menus || []
+            menus: []
         };
+
+        if (cart.content._idRestorer != "") {// Get Catalog
+            replyQueue = 'get.catalog.by.restorer';
+            correlationId = uuidv4();
+            message = {
+                success: true,
+                content: {idRestorer: cart.content._idRestorer},
+                correlationId: correlationId,
+                replyTo: replyQueue
+            };
+            await publishTopic('catalogs', 'get.catalog.by.restorer', message);
+
+            responses = await receiveResponses(replyQueue, correlationId, 1);
+            if (!responses[0].success) {
+                throw new Error('Cannot find catalog');
+            }
+            const catalog = responses[0]
+
+            const menus = cart.content.menus.map((menuId: string) => {
+                const menu = catalog.content.menus.find((m: any) => m._id === menuId);
+                if (menu) {
+                    let sum = 0;
+                    menu.articles.forEach((articleId: string) => {
+                        const article = catalog.content.articles.find((a: any) => a._id === articleId);
+                        if (article) {
+                            sum += article.price;
+                        } else {
+                            throw new Error(`Article with ID ${articleId} not found in the catalog`);
+                        }
+                    });
+                    
+                    return {
+                        id: menu._id,
+                        name: menu.name,
+                        description: menu.description,
+                        image: menu.image,
+                        amount: sum
+                    };
+                } else {
+                    throw new Error(`Menu with ID ${menuId} not found in the catalog`);
+                }
+            });
+            result.name = catalog?.content.name;
+            result.menus = menus || [];
+        }
         res.status(200).json(result);
     } catch (err) {
         const errMessage = err instanceof Error ? err.message : 'An error occurred';
@@ -226,7 +238,7 @@ export const getMenu = async (req: Request, res: Response) => {
 
         // Replace article IDs with catalog articles
         const articles = menu.articles.map((articleId: string) => {
-            const article = catalog?.content.articles.find((a: any) => a.id === articleId);
+            const article = catalog?.content.articles.find((a: any) => a._id === articleId);
             if (article) {
                 return {
                     id: article.id,

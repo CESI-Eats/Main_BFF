@@ -50,6 +50,7 @@ export const getMyAccount = async (req: Request, res: Response) => {
                 birthday: accountResponse?.content.birthday,
                 phoneNumber: accountResponse?.content.phoneNumber,
                 kitty: accountResponse?.content.kitty,
+                available: accountResponse?.content.available,
                 address: {
                     street: accountResponse?.content.address.street,
                     postalCode: accountResponse?.content.address.postalCode,
@@ -112,6 +113,7 @@ export const updateMyAccount = async (req: Request, res: Response) => {
                 name: req.body.name,
                 birthday: req.body.birthday,
                 phoneNumber: req.body.phoneNumber,
+                available: req.body.available,
                 address: {
                     street: req.body.address.street,
                     postalCode: req.body.address.postalCode,
@@ -287,15 +289,15 @@ export const getMyOrders = async (req: Request, res: Response) => {
 };
 
 export const collectKitty = async (req: Request, res: Response) => {
-    if (req.body.amount == null || !req.body.mode) {
-        return res.status(400).json({message: 'Missing parameters amount or mode'});
+    if (!req.body.mode) {
+        return res.status(400).json({message: 'Missing parameters mode'});
     }
     try {
         const replyQueue = 'collect.deliveryman.kitty.reply';
         const correlationId = uuidv4();
         const message: MessageLapinou = {
             success: true,
-            content: {id: (req as any).identityId, amount: req.body.amount, mode: req.body.mode},
+            content: {id: (req as any).identityId, mode: req.body.mode},
             correlationId: correlationId,
             replyTo: replyQueue
         };
