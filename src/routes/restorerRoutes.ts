@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Get
 router.get('/myaccount', authorize([IdentityType.RESTORER]),restorerController.getMyAccount);
-router.get('/catalog/:id', authorize([IdentityType.RESTORER]),restorerController.getMyCatalog);
+router.get('/mycatalog', authorize([IdentityType.RESTORER]),restorerController.getMyCatalog);
 router.get('/:catalogId/menus/:id', restorerController.getMenus);
 router.get('/:catalogId/articles/:id', restorerController.getArticles);
 router.get('/myorders', restorerController.getAllMyOrders);
